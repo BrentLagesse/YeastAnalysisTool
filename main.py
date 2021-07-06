@@ -238,6 +238,8 @@ def segment_images():
     for image_name in os.listdir(input_dir):
         if '_R3D_REF' not in image_name:
             continue
+        if os.path.splitext(image_name) != '.tif':  # ignore files that aren't tifs
+            continue
         seg = None
         image_dict[image_name] = list()
         #cp = CellPair(output_dir + 'segmented/' + image_name.split('.')[0] + '.tif', output_dir + 'masks/' + image_name.split('.')[0] + '.tif')
@@ -371,7 +373,9 @@ def segment_images():
             # don't overlay if it isn't the right base image
             if base_image_name not in images:
                 continue
-            tif_image = images.split('.')[0] + '.tif'
+            if os.path.splitext(image_name) != '.tif':  # ignore files that aren't tifs
+                continue
+            tif_image = images.split('.')[0] + '.tif'   # TODO:  Figure out if this line of code should be deleted -- leftover from 2 years ago
             if os.path.exists(output_dir + 'segmented/' + tif_image):
                 continue
             to_open = input_dir + images
@@ -431,7 +435,9 @@ def segment_images():
             # don't overlay if it isn't the right base image
             if base_image_name not in images:
                 continue
-            tif_image = images.split('.')[0] + '.tif'
+            if os.path.splitext(images) != '.tif':  # ignore files that aren't tifs
+                continue
+            #tif_image = images.split('.')[0] + '.tif'
             to_open = filter_dir + images
             if os.path.isdir(to_open):
                 continue
