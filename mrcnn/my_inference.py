@@ -99,7 +99,7 @@ def predict_images(test_path, sample_submission, outputfilename, rescale = False
     import tensorflow as tf
     from . import model as modellib
 
-    tf.set_random_seed(seed)
+    tf.random.set_seed(seed)
 
     if test_path[-1] != "/":
         test_path = test_path + "/"
@@ -127,10 +127,10 @@ def predict_images(test_path, sample_submission, outputfilename, rescale = False
         ##Set seeds for each image, just in case..
         random.seed(seed)
         np.random.seed(seed)
-        tf.set_random_seed(seed)
+        tf.random.set_seed(seed)
 
         ## Load the image
-        image_path = os.path.join(test_path, image_id, 'images', image_id + '.png')
+        image_path = os.path.join(test_path, image_id, 'images', image_id + '.tif')
         original_image = np.array(Image.open(image_path))
 
         if rescale:

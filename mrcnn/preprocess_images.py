@@ -23,7 +23,7 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
     output.close()
 
     for imagename in os.listdir(inputdirectory):
-        if 'DIC' not in imagename:
+        if '_R3D_REF' not in imagename:
             continue
         try:
             if verbose:
@@ -49,7 +49,7 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
                 os.makedirs(outputdirectory + imagename)
                 os.makedirs(outputdirectory + imagename + "/images/")
             rgbimage = Image.fromarray(rgbimage)
-            rgbimage.save(outputdirectory + imagename + "/images/" + imagename + ".png")
+            rgbimage.save(outputdirectory + imagename + "/images/" + imagename + ".tif")
 
             output = open(outputfile, "a")
             output.write(imagename + ", " + str(height) + " " + str(width) + "\n")

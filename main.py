@@ -13,6 +13,7 @@ import csv
 import cv2
 import numpy as np
 from PIL import ImageTk,Image
+import PIL
 import skimage.morphology
 import skimage.exposure
 import matplotlib.pyplot as plt
@@ -21,7 +22,7 @@ import matplotlib.patheffects as PathEffects
 from mrcnn.my_inference import predict_images
 from mrcnn.preprocess_images import preprocess_images
 from mrcnn.convert_to_image import convert_to_image, convert_to_imagej
-
+from PIL import TiffImagePlugin
 input_dir = opt.input_directory
 output_dir = opt.output_directory
 
@@ -33,6 +34,8 @@ def set_input_directory():
     global input_dir
     input_dir = filedialog.askdirectory(parent=window, title='Choose the Directory with the input Images',
                                         initialdir='.')
+    #TODO: This updates the variable, but I need to make it update the string on the screen
+    #print (input_dir)
 
 def set_output_directory():
     global output_dir
@@ -55,52 +58,59 @@ class CellPair:
         self.red_dot_distance = d
 
     def get_base_name(self):
-        return self.image_name.split('DIC')[0]
+        return self.image_name.split('_R3D_REF')[0]
 
     def get_DIC(self, use_id=False, outline=True):
-        outline = '';
+        outlinestr = ''
         if not outline:
-            outline = '-no_outline'
+            outlinestr = '-no_outline'
         if use_id:
-            return self.get_base_name() + 'DIC-' + str(self.id) + outline + '.png'
+            return self.get_base_name() + '_R3D_REF' + '-' + str(self.id)  + outlinestr + '.tif'
         else:
-            return self.get_base_name() + 'DIC.png'
+            return self.get_base_name() + '_R3D_REF.tif'
 
     def get_mCherry(self, use_id=False, outline=True):
-        outline = '';
+        outlinestr = ''
         if not outline:
-            outline = '-no_outline'
+            outlinestr = '-no_outline'
         if use_id:
-            return self.get_base_name() + 'Spc110-mCherry-' + str(self.id) + outline + '.png'
+            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w525' + '-' + str(self.id) + outlinestr + '.tif'
+            return self.get_base_name() + '_PRJ' + '_w435' + '-' + str(self.id) + outlinestr + '.tif'
         else:
-            return self.get_base_name() + 'Spc110-mCherry.png'
+            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w525' + outlinestr + '.tif'
+            return self.get_base_name() + '_PRJ' + '_w435' + outlinestr + '.tif'
 
     def get_DAPI(self, use_id=False, outline=True):
-        outline = '';
+        outlinestr = ''
         if not outline:
-            outline = '-no_outline'
+            outlinestr = '-no_outline'
         if use_id:
-            return self.get_base_name() + 'DAPI-' + str(self.id) + outline + '.png'
+            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w625' + '-' + str(self.id)  + outlinestr + '.tif'
+            return self.get_base_name() + '_PRJ' + '_w525' + '-' + str(self.id) + outlinestr + '.tif'
         else:
-            return self.get_base_name() + 'DAPI.png'
+            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w625' + outlinestr + '.tif'
+            return self.get_base_name() + '_PRJ' + '_w525' + outlinestr + '.tif'
 
     def get_GFP(self, use_id=False, outline=True):
-        outline = '';
+        outlinestr = ''
         if not outline:
-            outline = '-no_outline'
+            outlinestr = '-no_outline'
         if use_id:
-            return self.get_base_name() + 'Stu2-GFP-' + str(self.id) + outline + '.png'
+            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + 'GFP' + '-' + str(self.id)  + outlinestr + '.tif'
+            return self.get_base_name() + '_PRJ' + '_w625' + '-' + str(self.id) + outlinestr + '.tif'
         else:
-            return self.get_base_name() + 'Stu2-GFP.png'
+            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + 'GFP' + outlinestr + '.tif'
+            return self.get_base_name() + '_PRJ' + '_w625' + outlinestr + '.tif'
 
+    #TODO: Remove is Matt says we will never get this one
     def get_CFP(self, use_id=False, outline=True):
-        outline = '';
+        outlinestr = ''
         if not outline:
-            outline = '-no_outline'
+            outlinestr = '-no_outline'
         if use_id:
-            return self.get_base_name() + 'Tub1-CFP-' + str(self.id) + outline + '.png'
+            return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w435' + '-' + str(self.id)  + outlinestr + '.tif'
         else:
-            return self.get_base_name() + 'Tub1-CFP.png'
+            return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w435' + outlinestr + '.tif'
 
     def get_member_variables(self):
         return [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
@@ -139,7 +149,7 @@ def segment_images():
     global DAPI_label
     global mCherry_label
     global GFP_label
-    global CFP_label
+#    global CFP_label
     global ID_label
 
 
@@ -226,11 +236,11 @@ def segment_images():
 
 
     for image_name in os.listdir(input_dir):
-        if 'DIC' not in image_name:
+        if '_R3D_REF' not in image_name:
             continue
         seg = None
         image_dict[image_name] = list()
-        #cp = CellPair(output_dir + 'segmented/' + image_name.split('.')[0] + '.png', output_dir + 'masks/' + image_name.split('.')[0] + '.tif')
+        #cp = CellPair(output_dir + 'segmented/' + image_name.split('.')[0] + '.tif', output_dir + 'masks/' + image_name.split('.')[0] + '.tif')
         exist_check = os.path.exists(output_dir + 'masks/' + image_name.split('.')[0]+ '-cellpairs' + '.tif')
         if exist_check:
             seg = np.array(Image.open(output_dir + 'masks/' + image_name.split('.')[0]+ '-cellpairs' + '.tif'))
@@ -356,17 +366,18 @@ def segment_images():
         for i in range(1, int(np.max(seg)) + 1):
             image_dict[image_name].append(i)
 
-
-
+        base_image_name = image_name.split('_R3D_REF')[0]
         for images in os.listdir(input_dir):
-            base_image_name = image_name.split('DIC')[0]   # don't overlay if it isn't the right base image
+            # don't overlay if it isn't the right base image
             if base_image_name not in images:
                 continue
-            png_image = images.split('.')[0] + '.png'
-            if os.path.exists(output_dir + 'segmented/' + png_image):
+            tif_image = images.split('.')[0] + '.tif'
+            if os.path.exists(output_dir + 'segmented/' + tif_image):
                 continue
-
-            image = np.array(Image.open(input_dir + images))
+            to_open = input_dir + images
+            if os.path.isdir(to_open):
+                continue
+            image = np.array(Image.open(to_open))
             image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
@@ -407,19 +418,24 @@ def segment_images():
                 else:
                     print('could not find cell id ' + str(i))
 
-            fig.savefig(output_dir + 'segmented/' + png_image, dpi=600, bbox_inches='tight', pad_inches=0)
+            fig.savefig(output_dir + 'segmented/' + tif_image, dpi=600, bbox_inches='tight', pad_inches=0)
 
             #plt.show()
 
         #TODO:  Combine the two iterations over the input directory images
 
-        for images in os.listdir(input_dir):
-            base_image_name = image_name.split('DIC')[0]   # don't overlay if it isn't the right base image
+# This is where we overlay what we learned in the DIC onto the other images
+        #TODO: update the input directory so it grabs the other ones besides DIC
+        filter_dir = input_dir  + base_image_name + '_PRJ_TIFFS/'
+        for images in os.listdir(filter_dir):
+            # don't overlay if it isn't the right base image
             if base_image_name not in images:
                 continue
-            png_image = images.split('.')[0] + '.png'
-
-            image = np.array(Image.open(input_dir + images))
+            tif_image = images.split('.')[0] + '.tif'
+            to_open = filter_dir + images
+            if os.path.isdir(to_open):
+                continue
+            image = np.array(Image.open(to_open))
             image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
@@ -444,8 +460,8 @@ def segment_images():
 
             # Iterate over each integer in the segmentation and save the outline of each cell onto the outline file
             for i in range(1, int(np.max(seg) + 1)):
-                cell_png_image = images.split('.')[0] + '-' + str(i) + '.png'
-                no_outline_image = images.split('.')[0] + '-' + str(i) + '-no_outline.png'
+                cell_tif_image = images.split('.')[0] + '-' + str(i) + '.tif'
+                no_outline_image = images.split('.')[0] + '-' + str(i) + '-no_outline.tif'
 
 
                 a = np.where(seg == i)
@@ -456,11 +472,11 @@ def segment_images():
 
                 cellpair_image = image_outlined[min_x: max_x, min_y:max_y]
                 not_outlined_image = image[min_x: max_x, min_y:max_y]
-                if not os.path.exists(output_dir + 'segmented/' + cell_png_image):  # don't redo things we already have
-                    plt.imsave(output_dir + 'segmented/' + cell_png_image, cellpair_image, dpi=600)
+                if not os.path.exists(output_dir + 'segmented/' + cell_tif_image):  # don't redo things we already have
+                    plt.imsave(output_dir + 'segmented/' + cell_tif_image, cellpair_image, dpi=600, format='TIFF')
                     plt.clf()
                 if not os.path.exists(output_dir + 'segmented/' + no_outline_image):  # don't redo things we already have
-                    plt.imsave(output_dir + 'segmented/' + no_outline_image, not_outlined_image, dpi=600)
+                    plt.imsave(output_dir + 'segmented/' + no_outline_image, not_outlined_image, dpi=600, format='TIFF')
                     plt.clf()
     k, v = list(image_dict.items())[0]
     display_cell(k, v[0])
@@ -483,8 +499,8 @@ def display_cell(image, id):
     image_loc = output_dir + 'segmented/' + cp.get_DIC()
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(height) / float(width)
-    im = im.resize((800, int(scale * 800)), Image.ANTIALIAS)
+    scale = float(width)/float(height)
+    im = im.resize((int(scale * 800), 800), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     img_label.configure(image=img)
     img_label.image = img
@@ -492,8 +508,8 @@ def display_cell(image, id):
     image_loc = output_dir + 'segmented/' + cp.get_DIC(use_id=True)
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(height) / float(width)
-    im = im.resize((200, int(scale * 200)), Image.ANTIALIAS)
+    scale = float(width)/float(height)
+    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     DIC_label.configure(image=img)
     DIC_label.image = img
@@ -501,8 +517,8 @@ def display_cell(image, id):
     image_loc = output_dir + 'segmented/' + cp.get_DAPI(use_id=True)
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(height) / float(width)
-    im = im.resize((200, int(scale * 200)), Image.ANTIALIAS)
+    scale = float(width)/float(height)
+    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     DAPI_label.configure(image=img)
     DAPI_label.image = img
@@ -510,8 +526,8 @@ def display_cell(image, id):
     image_loc = output_dir + 'segmented/' + cp.get_mCherry(use_id=True)
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(height) / float(width)
-    im = im.resize((200, int(scale * 200)), Image.ANTIALIAS)
+    scale = float(width)/float(height)
+    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     mCherry_label.configure(image=img)
     mCherry_label.image = img
@@ -574,34 +590,35 @@ def display_cell(image, id):
     #plt.imshow(testimg)
     #plt.show()
 
-    image_loc = output_dir + 'segmented/' + cp.get_CFP(use_id=True)
-    im = Image.open(image_loc)
-    width, height = im.size
-    scale = float(height) / float(width)
-    im = im.resize((200, int(scale * 200)), Image.ANTIALIAS)
-    img = ImageTk.PhotoImage(im)
-    CFP_label.configure(image=img)
-    CFP_label.image = img
+    # new microscope doesn't have this?
+    #image_loc = output_dir + 'segmented/' + cp.get_CFP(use_id=True)
+    #im = Image.open(image_loc)
+    #width, height = im.size
+    #scale = float(height) / float(width)
+    #im = im.resize((200, int(scale * 200)), Image.ANTIALIAS)
+    #img = ImageTk.PhotoImage(im)
+    #CFP_label.configure(image=img)
+    #CFP_label.image = img
 
 
 
     # attempt to get distance
     #testimg = cv2.imread(image_loc, cv2.IMREAD_UNCHANGED)
-    image_loc = output_dir + 'segmented/' + cp.get_CFP(use_id=True, outline=False)
-    im = Image.open(image_loc)
-    testimg = np.array(im)
+    #image_loc = output_dir + 'segmented/' + cp.get_CFP(use_id=True, outline=False)
+    #im = Image.open(image_loc)
+    #testimg = np.array(im)
 
-    gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
+    #gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
     #plt.imshow(gray,  cmap='gray')
     #plt.show()
-    ret, thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
+    #ret, thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
 
-    contours, h = cv2.findContours(thresh, 1, 2)
+    #contours, h = cv2.findContours(thresh, 1, 2)
 
-    for cnt in contours:
-        cv2.drawContours(testimg, [cnt], 0, (0, 0, 255), 1)
-    plt.imshow(testimg)
-    plt.show()
+    #for cnt in contours:
+    #    cv2.drawContours(testimg, [cnt], 0, (0, 0, 255), 1)
+    #plt.imshow(testimg)
+    #plt.show()
 
 
 
@@ -610,8 +627,8 @@ def display_cell(image, id):
     image_loc = output_dir + 'segmented/' + cp.get_GFP(use_id=True)
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(height) / float(width)
-    im = im.resize((200, int(scale * 200)), Image.ANTIALIAS)
+    scale = float(width)/float(height)
+    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     GFP_label.configure(image=img)
     GFP_label.image = img
@@ -637,10 +654,10 @@ def display_cell(image, id):
     dist1.grid(row=8, column=3)
 
 
-    rad5 = Radiobutton(window, text='One Cyan Dot', value=1, variable=cp.cyan_dot_count)
-    rad6 = Radiobutton(window, text='Two Cyan Dot', value=2, variable=cp.cyan_dot_count)
-    rad5.grid(row=6, column=5)
-    rad6.grid(row=7, column=5)
+    #rad5 = Radiobutton(window, text='One Cyan Dot', value=1, variable=cp.cyan_dot_count)
+    #rad6 = Radiobutton(window, text='Two Cyan Dot', value=2, variable=cp.cyan_dot_count)
+    #rad5.grid(row=6, column=5)
+    #rad6.grid(row=7, column=5)
 
     rad7 = Radiobutton(window, text='One Green Dot', value=1, variable=cp.green_dot_count)
     rad8 = Radiobutton(window, text='Two Green Dot', value=2, variable=cp.green_dot_count)
@@ -721,8 +738,8 @@ mCherry_label.grid(row=5, column=3)
 GFP_label = Label(window)
 GFP_label.grid(row=5, column=4)
 
-CFP_label = Label(window)
-CFP_label.grid(row=5, column=5)
+#CFP_label = Label(window)
+#CFP_label.grid(row=5, column=5)
 
 def callback(event):
     print("clicked at " + str(event.x) + ',' + str(event.y))
