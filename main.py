@@ -65,11 +65,11 @@ class CellPair:
         if not outline:
             outlinestr = '-no_outline'
         if use_id:
-            return self.get_base_name() + '_R3D_REF' + '-' + str(self.id)  + outlinestr + '.tif'
+            return self.get_base_name() + '_R3D_REF' + '-' + str(self.id) + outlinestr + '.tif'
         else:
             return self.get_base_name() + '_R3D_REF.tif'
 
-    def get_mCherry(self, use_id=False, outline=True):
+    def get_DAPI(self, use_id=False, outline=True):
         outlinestr = ''
         if not outline:
             outlinestr = '-no_outline'
@@ -80,7 +80,7 @@ class CellPair:
             #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w525' + outlinestr + '.tif'
             return self.get_base_name() + '_PRJ' + '_w435' + outlinestr + '.tif'
 
-    def get_DAPI(self, use_id=False, outline=True):
+    def get_GFP(self, use_id=False, outline=True):
         outlinestr = ''
         if not outline:
             outlinestr = '-no_outline'
@@ -91,7 +91,7 @@ class CellPair:
             #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w625' + outlinestr + '.tif'
             return self.get_base_name() + '_PRJ' + '_w525' + outlinestr + '.tif'
 
-    def get_GFP(self, use_id=False, outline=True):
+    def get_mCherry(self, use_id=False, outline=True):
         outlinestr = ''
         if not outline:
             outlinestr = '-no_outline'
@@ -238,7 +238,8 @@ def segment_images():
     for image_name in os.listdir(input_dir):
         if '_R3D_REF' not in image_name:
             continue
-        if os.path.splitext(image_name) != '.tif':  # ignore files that aren't tifs
+        extspl = os.path.splitext(image_name)
+        if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
             continue
         seg = None
         image_dict[image_name] = list()
@@ -373,7 +374,8 @@ def segment_images():
             # don't overlay if it isn't the right base image
             if base_image_name not in images:
                 continue
-            if os.path.splitext(image_name) != '.tif':  # ignore files that aren't tifs
+            extspl = os.path.splitext(images)
+            if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
                 continue
             tif_image = images.split('.')[0] + '.tif'   # TODO:  Figure out if this line of code should be deleted -- leftover from 2 years ago
             if os.path.exists(output_dir + 'segmented/' + tif_image):
@@ -429,19 +431,22 @@ def segment_images():
         #TODO:  Combine the two iterations over the input directory images
 
 # This is where we overlay what we learned in the DIC onto the other images
-        #TODO: update the input directory so it grabs the other ones besides DIC
+
         filter_dir = input_dir  + base_image_name + '_PRJ_TIFFS/'
-        for images in os.listdir(filter_dir):
+
+        for full_path in ([filter_dir + x for x in os.listdir(filter_dir)] + [input_dir + image_name,]):
+            images = os.path.split(full_path)[1]  # we start in separate directories, but need to end up in the same one
             # don't overlay if it isn't the right base image
             if base_image_name not in images:
                 continue
-            if os.path.splitext(images) != '.tif':  # ignore files that aren't tifs
+            extspl = os.path.splitext(images)
+            if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
                 continue
             #tif_image = images.split('.')[0] + '.tif'
-            to_open = filter_dir + images
-            if os.path.isdir(to_open):
+
+            if os.path.isdir(full_path):
                 continue
-            image = np.array(Image.open(to_open))
+            image = np.array(Image.open(full_path))
             image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
@@ -484,8 +489,12 @@ def segment_images():
                 if not os.path.exists(output_dir + 'segmented/' + no_outline_image):  # don't redo things we already have
                     plt.imsave(output_dir + 'segmented/' + no_outline_image, not_outlined_image, dpi=600, format='TIFF')
                     plt.clf()
-    k, v = list(image_dict.items())[0]
-    display_cell(k, v[0])
+
+    # if the image_dict is empty, then we didn't get anything interesting from the directory
+    if len(image_dict) > 0:
+        k, v = list(image_dict.items())[0]
+        display_cell(k, v[0])
+    #else: show error message
 
 def save():
     pass

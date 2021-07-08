@@ -25,6 +25,9 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
     for imagename in os.listdir(inputdirectory):
         if '_R3D_REF' not in imagename:
             continue
+        extspl = os.path.splitext(imagename)
+        if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
+            continue
         try:
             if verbose:
                 print ("Preprocessing ", imagename)
