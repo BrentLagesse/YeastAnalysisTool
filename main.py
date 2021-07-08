@@ -32,15 +32,20 @@ n = 0
 
 def set_input_directory():
     global input_dir
+    global input_lbl
     input_dir = filedialog.askdirectory(parent=window, title='Choose the Directory with the input Images',
                                         initialdir='.')
     #TODO: This updates the variable, but I need to make it update the string on the screen
+
+    input_lbl.config(text = input_dir)
     #print (input_dir)
 
 def set_output_directory():
     global output_dir
+    global output_lbl
     output_dir = filedialog.askdirectory(parent=window, title='Choose the Directory to output Segmented Images',
                                          initialdir='.')
+    output_lbl.config(text = output_dir)
 
 class CellPair:
     def __init__(self, image_name, id):
