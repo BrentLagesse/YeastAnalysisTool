@@ -593,8 +593,10 @@ def get_stats(cp):
     #outlines screw up the analysis
     im = Image.open(output_dir + 'segmented/' + cp.get_mCherry(use_id=True, outline=False))
     im_GFP = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True, outline=False))
+    im_GFP_for_cellular_intensity = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True))  #has outline
     testimg = np.array(im)
     GFP_img = np.array(im_GFP)
+    img_for_cell_intensity = np.array(im_GFP_for_cellular_intensity)
     # was RGBA2GRAY
     orig_gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
     kdev = int(kernel_deviation_input.get())
@@ -901,35 +903,41 @@ def get_stats(cp):
     # compute intensities
     # lets edit the outlined images, not the regulars
     #mask_circle = np.zeros(gray.shape, np.uint8)
-    mask_convex = np.zeros(gray.shape, np.uint8)
-    #mask_contour = np.zeros(gray.shape, np.uint8)
+    #mask_convex = np.zeros(gray.shape, np.uint8)
+    mask_contour = np.zeros(gray.shape, np.uint8)
     # actual contour mask?
     #        cv2.drawContours(mask, [contours[cnt]], 255, 100, -1)
 
     # Circle Mask
     #cv2.circle(mask_circle, center1, radius1, 255, -1)
-    cv2.drawContours(mask_convex, [h1, ], 0, 255, 1)
-    #cv2.drawContours(mask_contour, [best_contour], 0, (0, 255, 0), 1)
+    #cv2.drawContours(mask_convex, [h1, ], 0, 255, 1)
+    cv2.drawContours(mask_contour, [best_contour], 0, 255, 1)
 
     #pts_circle = np.transpose(np.nonzero(mask_circle))
-    pts_convex = np.transpose(np.nonzero(mask_convex))
-    #pts_contour = np.transpose(np.nonzero(mask_contour))
+    #pts_convex = np.transpose(np.nonzero(mask_convex))
+    pts_contour = np.transpose(np.nonzero(mask_contour))
 
     # intensity_sum = 0
     # for p in pts_circle:
     #     intensity_sum += orig_gray[p[0]][p[1]]
     # cp.set_GFP_Nucleus_Intensity(Contour.CIRCLE, intensity_sum, len(pts_circle))
 
-    intensity_sum = 0
-    for p in pts_convex:
-        intensity_sum += orig_gray[p[0]][p[1]]
-    cp.set_GFP_Nucleus_Intensity(Contour.CONVEX, intensity_sum, len(pts_convex))
-
     # intensity_sum = 0
-    # for p in pts_contour:
+    # for p in pts_convex:
     #     intensity_sum += orig_gray[p[0]][p[1]]
-    # cp.set_GFP_Nucleus_Intensity(Contour.CONTOUR, intensity_sum, len(pts_contour))
+    # cp.set_GFP_Nucleus_Intensity(Contour.CONTOURS, intensity_sum, len(pts_convex))
 
+    intensity_sum = 0
+    for p in pts_contour:
+        intensity_sum += orig_gray[p[0]][p[1]]
+    cp.set_GFP_Nucleus_Intensity(Contour.CONTOUR, intensity_sum, len(pts_contour))
+
+
+#cellular intensity -- img_for_cell_intensity
+    #TODO:
+    # get the contour, find the biggest one (the outline)
+    # create a mask with the outline contour
+    # calculate intensity   
 
         #raise ValueError   # throw an error so we can crash the program
 
@@ -1133,7 +1141,7 @@ def display_cell(image, id):
     rad7 = Radiobutton(window, text='One Green Dot', value=1, variable=cp.green_dot_count)
     rad8 = Radiobutton(window, text='Two Green Dot', value=2, variable=cp.green_dot_count)
     intense1 = Label(window)
-    intense1.config(text="Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONVEX]))
+    intense1.config(text="Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
     rad7.grid(row=6, column=4)
     rad8.grid(row=7, column=4)
     intense1.grid(row=8, column=4)
