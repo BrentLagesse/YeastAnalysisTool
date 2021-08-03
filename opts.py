@@ -1,9 +1,9 @@
 ############# INPUTS AND OUTPUTS #############
 # Input directory of images to be segmented
-input_directory = "/home/brent/YeastAnalysisTool/inputs/"
+input_directory = "./inputs/"
 
 # Output directory to save masks to
-output_directory = "/home/brent/YeastAnalysisTool/outputs/"
+output_directory = "./outputs/"
 ##############################################
 
 ################## OPTIONS ###################
