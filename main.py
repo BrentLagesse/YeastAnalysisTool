@@ -1,3 +1,4 @@
+import pytz
 from tkinter import *
 from tkinter import filedialog
 from tkinter.ttk import *
@@ -24,65 +25,17 @@ from mrcnn.preprocess_images import preprocess_images
 from mrcnn.convert_to_image import convert_to_image, convert_to_imagej
 from enum import Enum
 from PIL import TiffImagePlugin
+
 input_dir = opt.input_directory
 output_dir = opt.output_directory
+ignore_btn = None
 
-image_dict = dict()    # ID# -> CellPair
+
+image_dict = dict()    # image -> list of cell ids
+cp_dict = dict()        # (image, id) -> cp
 
 n = 0
 
-
-class clockwise_angle_and_distance():
-    '''
-    A class to tell if point is clockwise from origin or not.
-    This helps if one wants to use sorted() on a list of points.
-
-    Parameters
-    ----------
-    point : ndarray or list, like [x, y]. The point "to where" we g0
-    self.origin : ndarray or list, like [x, y]. The center around which we go
-    refvec : ndarray or list, like [x, y]. The direction of reference
-
-    use:
-        instantiate with an origin, then call the instance during sort
-    reference:
-    https://stackoverflow.com/questions/41855695/sorting-list-of-two-dimensional-coordinates-by-clockwise-angle-using-python
-
-    Returns
-    -------
-    angle
-
-    distance
-
-
-    '''
-
-    def __init__(self, origin):
-        self.origin = origin
-
-    def __call__(self, point, refvec=[0, 1]):
-        if self.origin is None:
-            raise NameError("clockwise sorting needs an origin. Please set origin.")
-        # Vector between point and the origin: v = p - o
-        vector = [point[0] - self.origin[0], point[1] - self.origin[1]]
-        # Length of vector: ||v||
-        lenvector = np.linalg.norm(vector[0] - vector[1])
-        # If length is zero there is no angle
-        if lenvector == 0:
-            return -math.pi, 0
-        # Normalize vector: v/||v||
-        normalized = [vector[0] / lenvector, vector[1] / lenvector]
-        dotprod = normalized[0] * refvec[0] + normalized[1] * refvec[1]  # x1*x2 + y1*y2
-        diffprod = refvec[1] * normalized[0] - refvec[0] * normalized[1]  # x1*y2 - y1*x2
-        angle = math.atan2(diffprod, dotprod)
-        # Negative angles represent counter-clockwise angles so we need to
-        # subtract them from 2*pi (360 degrees)
-        if angle < 0:
-            return 2 * math.pi + angle, lenvector
-        # I return first the angle because that's the primary sorting criterium
-        # but if two vectors have the same angle then the shorter distance
-        # should come first.
-        return angle, lenvector
 
 class Contour(Enum):
     CONTOUR = 0
@@ -121,6 +74,7 @@ class CellPair:
         self.nucleus_total_points = 0
         self.cell_intensity = dict()
         self.cell_total_points = 0
+        self.ignored = False
 
     def set_red_dot_distance(self, d):
         self.red_dot_distance = d
@@ -218,12 +172,61 @@ class CellPair:
         self.red_dot_count = red_dot_count
         self.red_dot_distance = red_dot_distance
 
+    def set_ignored(self, enabled):
+        self.ignored = enabled
+
+    def get_ignored(self):
+        return self.ignored
 
 def load_result(cell_id=0):
     global image_dict
     #TODO:  if cell_id is negative, loop back around
     pass
     #
+
+def export_to_csv():
+    global image_dict
+    global cp_dict
+
+
+    from datetime import datetime
+    now = datetime.utcnow().replace(tzinfo=pytz.utc)
+
+    #TODO custom filename
+    with open('filename.csv', mode='w') as outfile:
+        outfile_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        #write headers
+        # Image name, cell id, date, time, software version number, thresholding technique, contour technique, smoothing technique
+        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'user invalidated'])
+        for image, cells  in image_dict.items():
+            for cell in cells:
+                cp = cp_dict.get((image, cell))
+                if cp == None:   # create a new one and run stats
+                    cp = CellPair(image, cell)
+                    get_stats(cp)
+                    cp_dict[(image, cell)] = cp
+
+        for key, cp in cp_dict.items():
+
+            line = list()  #all the elements to write
+
+            line.append(key[0])
+            line.append(key[1])
+            line.append(now)
+            line.append(kernel_size_input.get())
+            line.append(kernel_deviation_input.get())
+            line.append('contour')  # we might make this variable in the future
+            line.append('cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU') # we might make this variable in the future
+            line.append(cp.nucleus_intensity)   # nuclear gfp
+            line.append(cp.cell_intensity)   # cellular gfp
+            line.append(cp.get_ignored())   # check if the user has invalidated this sample
+            outfile_writer.writerow(line)
+
+
+
+
+
+
 
 def segment_images():
     global image_dict
@@ -583,8 +586,14 @@ def segment_images():
         display_cell(k, v[0])
     #else: show error message
 
-def save():
-    pass
+def ignore(image, id):
+    global ignore_btn
+    global cp_dict
+    cp_dict[(image, id)].set_ignored(not cp_dict[(image, id)].get_ignored())
+    if cp_dict[(image, id)].get_ignored():
+        ignore_btn.config(text = 'ENABLE')
+    else:
+        ignore_btn.config(text = 'IGNORE')
 
     # attempt to get distance
     #testimg = cv2.imread(image_loc, cv2.IMREAD_UNCHANGED)
@@ -597,6 +606,9 @@ def get_stats(cp):
     testimg = np.array(im)
     GFP_img = np.array(im_GFP)
     img_for_cell_intensity = np.array(im_GFP_for_cellular_intensity)
+
+    cell_intensity_gray = cv2.cvtColor(img_for_cell_intensity, cv2.COLOR_RGB2GRAY)
+
     # was RGBA2GRAY
     orig_gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
     kdev = int(kernel_deviation_input.get())
@@ -606,10 +618,31 @@ def get_stats(cp):
         ksize += 1
         print("You used an even ksize, updating to odd number +1")
     gray = cv2.GaussianBlur(orig_gray, (ksize,ksize), kdev)
-    plt.title("blur")
-    plt.imshow(gray,  cmap='gray')
-    plt.show()
+    # plt.title("blur")
+    # plt.imshow(gray,  cmap='gray')
+    # plt.show()
     ret, thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
+
+    # Some of the cell outlines are split into two circles.  We blur this so that the contour will cover  both of them
+    cell_intensity_gray = cv2.GaussianBlur(cell_intensity_gray, (3, 3), 1)
+    # plt.title("cell_int_gray")
+    # plt.imshow(cell_intensity_gray, cmap='gray')
+    # plt.show()
+    # plt.title("cell_int")
+    # plt.imshow(img_for_cell_intensity, cmap='gray')
+    # plt.show()
+    cell_int_ret, cell_int_thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
+    cell_int_cont, cell_int_h = cv2.findContours(cell_int_thresh, 1, 2)
+
+    #we want the biggest contour because that'll be our cellular intensity boundary
+    largest = 0
+    largest_cell_cnt = None
+    for cnt in cell_int_cont:
+        area = cv2.contourArea(cnt)
+        if  area > largest:
+            largest = area
+            largest_cell_cnt = cnt
+
 
     contours, h = cv2.findContours(thresh, 1, 2)
     #iterate through contours and throw out the largest (the box) and anything less than the second and third largest)
@@ -660,175 +693,6 @@ def get_stats(cp):
         c1 = contours[bestContours[0]]
         c2 = contours[bestContours[1]]
 
-# DUMB IDEA TO DRAW A LINE BETWEEN THE TWO CONTOURS AND RE-EVALUATE
-        DRAW_LINE = False
-        if DRAW_LINE:
-            M1 = cv2.moments(c1)
-            M2 = cv2.moments(c2)
-            (x1, y1), radius1 = cv2.minEnclosingCircle(c1)
-            center1 = (int(x1), int(y1))
-            radius1 = int(radius1)
-            (x2, y2), radius2 = cv2.minEnclosingCircle(c2)
-            center2 = (int(x2), int(y2))
-            radius2 = int(radius2)
-            r = 0
-            if radius2 > radius1:
-                r = radius2
-            else:
-                r = radius1
-            thickness = int(r/4)
-            print (str(thickness) +' ' + str(center1) + ' ' + str(center2))
-            cv2.line(gray, center1, center2, 128, thickness)
-            plt.title("line")
-            plt.imshow(gray, cmap='gray')
-            plt.show()
-            ret, thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
-            contours, h = cv2.findContours(thresh, 1, 2)
-            # iterate through contours and throw out the largest (the box) and anything less than the second and third largest)
-            # Contours finds the entire image as a contour and it seems to always put it in the contours[len(contours)].  We should do this more robustly in the future
-
-            best_area = 0
-            for i, cnt in enumerate(contours):
-                if i == len(contours) - 1:  # this is not robust #TODO fix it
-                    continue
-                area = cv2.contourArea(cnt)
-                if area > best_area:
-                    best_area = area
-                    best_contour = cnt
-
-        MERGE_CONTOURS = False   #This wasn't working
-        if MERGE_CONTOURS:
-    # CREATE A CONVEX HULL FROM MERGED CONTOURS1
-            list_of_pts_contours = []
-            for ctr in (c1, c2):
-                list_of_pts_contours += [pt[0] for pt in ctr]
-
-            list_of_pts_convex = []
-            for ctr in (cv2.convexHull(c1), cv2.convexHull(c2)):
-                list_of_pts_convex += [pt[0] for pt in ctr]
-
-            #list_of_pts_circle = []
-            #for ctr in (cv2.minEnclosingCircle(c1), cv2.minEnclosingCircle(c2)):
-            #    list_of_pts_circle += [pt[0] for pt in ctr]
-
-            center_pt = np.array(list_of_pts_contours).mean(axis=0)  # get origin
-            clock_ang_dist = clockwise_angle_and_distance(center_pt)  # set origin
-            list_of_pts = sorted(list_of_pts_contours, key=clock_ang_dist)  # use to sort
-            list_of_pts_contours_c1 = list()
-            list_of_pts_contours_c1 += [pt[0] for pt in c1]
-
-            center_pt_c1 = np.array(list_of_pts_contours_c1).mean(axis=0)  # get origin
-            clock_ang_dist_c1 = clockwise_angle_and_distance(center_pt_c1)  # set origin
-            list_of_pts_c1 = sorted(list_of_pts_contours_c1, key=clock_ang_dist_c1)  # use to sort
-            contour = np.array(list_of_pts_c1).reshape((-1, 1, 2)).astype(np.int32)
-            cv2.drawContours(edit_testimg, [contour, ], 0, 255, 1)
-            plt.title("sorted c1")
-            plt.imshow(edit_testimg, cmap='gray')
-            plt.show()
-
-
-            #TODO:  Iterate through this list of points.  choose the furthest point from the other contour
-            # if that point is next a point in it original contour and it wasn't originally next to it, remove the point
-            fixed_list_of_pts = list()
-            # determine point furthest from center of other list
-            (x1, y1), radius1 = cv2.minEnclosingCircle(c2)
-            greatest_distance = 0
-            furthest_pt = (0,0)
-            #we are starting at a point in c1
-            actual_list_of_pts = list()
-            for l in list_of_pts:
-                actual_list_of_pts.append(l.tolist())
-            actual_c1 = list()
-            actual_c2 = list()
-            for c in c1:
-                actual_c1.append(c[0].tolist())
-            for c in c2:
-                actual_c2.append(c[0].tolist())
-            list_of_pts = actual_list_of_pts
-            c1 = actual_c1
-            c2 = actual_c2
-
-            current_cnt = c1
-            for pt in current_cnt:
-                d = math.sqrt(pow(pt[0] - x1, 2) + pow(pt[1] - y1, 2))
-                if d > greatest_distance:
-                    greatest_distance = d
-                    furthest_pt = pt
-            starting_pt = list_of_pts.index(furthest_pt)
-
-
-            #result = np.where(list_of_pts == furthest_pt)  # start at the furthest point so we are on the outside
-            #Note:  I couldn't figure out how to get numpy.where to just give this to me directly, it wants to match all possible elements
-            # counts = list()
-            # starting_pt = -1  #cause an error if we dont' find it
-            # for idx in result[0]:
-            #     if idx in counts:
-            #         starting_pt = idx
-            #         break
-            #     else:
-            #         counts.append(idx)
-
-    #TODO:   Make sure this is actually filtering out bad points
-
-
-            pt_location = starting_pt
-            next_pt = pt_location + 1
-            if next_pt >= len(list_of_pts):
-                next_pt = 0
-            fixed_list_of_pts.append(np.array(list_of_pts[starting_pt]))
-            while next_pt != starting_pt:
-                # if the next point is in the same contour, was it originally next to us?
-                if list_of_pts[next_pt] in current_cnt:
-                    next_loc = current_cnt.index(list_of_pts[pt_location]) + 1
-                    if next_loc >= len(current_cnt):    #loop to beginning
-                        next_loc = 0
-                    if current_cnt[next_loc] == list_of_pts[next_pt]:   #only add if it is the correct point
-                        fixed_list_of_pts.append(np.array(list_of_pts[next_pt]))
-                    else: # skip to the next one
-                        next_pt += 1
-                        if next_pt >= len(list_of_pts):
-                            next_pt = 0
-                        continue
-                else:
-                    fixed_list_of_pts.append(np.array(list_of_pts[next_pt]))
-                    if current_cnt == c1:     #when we run into a point from the other cnt, flip the current
-                        current_cnt = c2
-                    else:
-                        current_cnt = c1
-                pt_location = next_pt
-                loc_update = next_pt + 1
-                if loc_update >= len(list_of_pts):   #loop to beginning
-                    loc_update = 0
-                next_pt = loc_update
-
-
-            #force list of points back into a contour
-            contour = np.array([fixed_list_of_pts]).reshape((-1, 1, 2)).astype(np.int32)
-            #cathull = cv2.convexHull(contour)
-            orig_con = orig_gray
-            cv2.drawContours(orig_con, [contour, ], 0, 255, 1)
-            plt.title("concatenated convexes")
-            plt.imshow(orig_con,   cmap='gray')
-            plt.show()
-            best_contour = contour
-
-
-        BASIC_CONCAT = False
-        if BASIC_CONCAT:
-            concat = np.concatenate((c1, c2))
-            cathull = cv2.convexHull(concat)
-            orig_con = orig_gray
-            orig_cat = orig_gray
-            cv2.drawContours(orig_con, [concat,], 0, 255, 1)
-            cv2.drawContours(orig_cat, [cathull, ], 0, 255, 1)
-            plt.title("concatenated contours")
-            plt.imshow(orig_con,   cmap='gray')
-            plt.show()
-            plt.title("cat hull contours")
-            plt.imshow(orig_cat,  cmap='gray')
-            plt.show()
-            bestContours = [concat, ]
-            #bestContours = [cathull, ]
 
         MERGE_CLOSEST = True
         if MERGE_CLOSEST:   # find the two closest points and just push c2 into c1 there
@@ -895,6 +759,7 @@ def get_stats(cp):
     #cv2.drawContours(edit_GFP_img, [h1, ], 0, 255, 1)
     cv2.drawContours(edit_testimg, [best_contour], 0, (0, 255, 0), 1)
     cv2.drawContours(edit_GFP_img, [best_contour], 0, (0, 255, 0), 1)
+    cv2.drawContours(edit_GFP_img, [largest_cell_cnt], 0, (255,0,0), 1)
 
     # Circles instead of contours
     #cv2.circle(edit_testimg, center1, radius1, (255, 0, 0), 1)
@@ -905,6 +770,7 @@ def get_stats(cp):
     #mask_circle = np.zeros(gray.shape, np.uint8)
     #mask_convex = np.zeros(gray.shape, np.uint8)
     mask_contour = np.zeros(gray.shape, np.uint8)
+    cell_mask = np.zeros(gray.shape, np.uint8)
     # actual contour mask?
     #        cv2.drawContours(mask, [contours[cnt]], 255, 100, -1)
 
@@ -912,10 +778,12 @@ def get_stats(cp):
     #cv2.circle(mask_circle, center1, radius1, 255, -1)
     #cv2.drawContours(mask_convex, [h1, ], 0, 255, 1)
     cv2.drawContours(mask_contour, [best_contour], 0, 255, 1)
+    cv2.drawContours(cell_mask, [largest_cell_cnt], 0, 255, 1)
 
     #pts_circle = np.transpose(np.nonzero(mask_circle))
     #pts_convex = np.transpose(np.nonzero(mask_convex))
     pts_contour = np.transpose(np.nonzero(mask_contour))
+    cell_pts_contour = np.transpose(np.nonzero(cell_mask))
 
     # intensity_sum = 0
     # for p in pts_circle:
@@ -933,62 +801,12 @@ def get_stats(cp):
     cp.set_GFP_Nucleus_Intensity(Contour.CONTOUR, intensity_sum, len(pts_contour))
 
 
-#cellular intensity -- img_for_cell_intensity
-    #TODO:
-    # get the contour, find the biggest one (the outline)
-    # create a mask with the outline contour
-    # calculate intensity   
-
-        #raise ValueError   # throw an error so we can crash the program
+    cell_intensity_sum = 0
+    for p in cell_pts_contour:
+        cell_intensity_sum += orig_gray[p[0]][p[1]]
+    cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(cell_pts_contour))
 
 
-        #print(str(intensity_sum))
-#TODO:   If we have multiple contours, merge the top 2 and then run the 1 contour code
-    # if len(bestContours) == 2:
-    #     M1 = cv2.moments(contours[bestContours[0]])
-    #     M2 = cv2.moments(contours[bestContours[1]])
-    #     (x1, y1), radius1 = cv2.minEnclosingCircle(contours[bestContours[0]])
-    #     center1 = (int(x1), int(y1))
-    #     radius1 = int(radius1)
-    #     (x2, y2), radius2 = cv2.minEnclosingCircle(contours[bestContours[1]])
-    #     center2 = (int(x2), int(y2))
-    #     radius2 = int(radius2)
-    #     h1 = cv2.convexHull(contours[bestContours[0]])
-    #     h2 = cv2.convexHull(contours[bestContours[1]])
-    #     cv2.drawContours(edit_testimg, [h1, ], 0, 255, 1)
-    #     cv2.drawContours(edit_GFP_img, [h1, ], 0, 255, 1)
-    #     cv2.drawContours(edit_testimg, [h2, ], 0, 255, 1)
-    #     cv2.drawContours(edit_GFP_img, [h2, ], 0, 255, 1)
-    #     cv2.drawContours(edit_testimg, [contours[bestContours[0]]], 0, (0, 255, 0), 1)
-    #     cv2.drawContours(edit_testimg, [contours[bestContours[1]]], 0, (0, 255, 0), 1)
-    #     cv2.drawContours(edit_GFP_img, [contours[bestContours[0]]], 0, (0, 255, 0), 1)
-    #     cv2.drawContours(edit_GFP_img, [contours[bestContours[1]]], 0, (0, 255, 0), 1)
-    #
-    #     # Circles instead of contours
-    #     cv2.circle(edit_testimg, center1, radius1, (255, 0, 0), 1)
-    #     cv2.circle(edit_testimg, center2, radius2, (255, 0, 0), 1)
-    #     cv2.circle(edit_GFP_img, center1, radius1, (255, 0, 0), 1)
-    #     cv2.circle(edit_GFP_img, center2, radius2, (255, 0, 0), 1)
-    #
-    #     # compute intensities
-    #     # lets edit the outlined images, not the regulars
-    #     mask = np.zeros(gray.shape, np.uint8)
-    #     # actual contour mask?
-    #     #        cv2.drawContours(mask, [contours[cnt]], 255, 100, -1)
-    #
-    #     # Circle Mask
-    #     cv2.circle(mask, center1, radius1, 255, -1)
-    #     cv2.circle(mask, center2, radius2, 255, -1)
-    #
-    #     pts = np.transpose(np.nonzero(mask))
-    #     intensity_sum = 0
-    #     for p in pts:
-    #         intensity_sum += gray[p[0]][p[1]]
-    #     cp.set_GFP_Nucleus_Intensity(intensity_sum, len(pts))
-    #     print(str(intensity_sum))
-    #     # cp.set_GFP_Cell_Intensity(intensity_sum, len(pts))
-    #     plt.imshow(mask, cmap='gray')
-    #     plt.show()
 
 
 #TODO:  This was code from when we wanted to get the distance between the mCherry centers
@@ -1009,15 +827,10 @@ def get_stats(cp):
 
 
 
-    #print (str(sum(lst_intensities)))
-    #plt.imshow(cimg)
-    #plt.show()
- #   plt.imshow(testimg)
-#    plt.show()
     return Image.fromarray(edit_testimg), Image.fromarray(edit_GFP_img)
 
 def display_cell(image, id):
-
+    global ignore_btn
     max_id = len(image_dict[image])
     if id < 1:
         id = max_id
@@ -1025,8 +838,11 @@ def display_cell(image, id):
         id = 1
     ID_label.configure(text='Cell ID:  ' + str(id))
     img_title_label.configure(text=image)
+    cp = cp_dict.get((image, id))
+    if cp == None:
+        cp = CellPair(image, id)
+        cp_dict[(image, id)] = cp
 
-    cp = CellPair(image, id)
     im_cherry, im_gfp = get_stats(cp)
     image_loc = output_dir + 'segmented/' + cp.get_DIC()
     im = Image.open(image_loc)
@@ -1112,25 +928,25 @@ def display_cell(image, id):
     GFP_label.configure(image=img)
     GFP_label.image = img
 
-    chk_state = BooleanVar()
-    chk_state.set(False)  # set this with whatever we predict
-    chk = Checkbutton(window, text='Mother-Daughter Pair', var=cp.is_correct)
-    chk.grid(row=6, column=1)
+    #chk_state = BooleanVar()
+    #chk_state.set(False)  # set this with whatever we predict
+    #chk = Checkbutton(window, text='Mother-Daughter Pair', var=cp.is_correct)
+    #chk.grid(row=6, column=1)
     nuclei_count = 0
 
-    rad1 = Radiobutton(window, text='One Nuclei', value=1, variable=cp.nuclei_count)
-    rad2 = Radiobutton(window, text='Two Nuclei', value=2, variable=cp.nuclei_count)
-    rad1.grid(row=6, column=2)
-    rad2.grid(row=7, column=2)
+    #rad1 = Radiobutton(window, text='One Nuclei', value=1, variable=cp.nuclei_count)
+    #rad2 = Radiobutton(window, text='Two Nuclei', value=2, variable=cp.nuclei_count)
+    #rad1.grid(row=6, column=2)
+    #rad2.grid(row=7, column=2)
 
 
-    rad3 = Radiobutton(window, text='One Red Dot', value=1, variable=cp.red_dot_count)
-    rad4 = Radiobutton(window, text='Two Red Dot', value=2, variable=cp.red_dot_count)
-    dist1 = Label(window)
-    dist1.config(text="Distance: {:.3f}".format(cp.red_dot_distance))
-    rad3.grid(row=6, column=3)
-    rad4.grid(row=7, column=3)
-    dist1.grid(row=8, column=3)
+    #rad3 = Radiobutton(window, text='One Red Dot', value=1, variable=cp.red_dot_count)
+    #rad4 = Radiobutton(window, text='Two Red Dot', value=2, variable=cp.red_dot_count)
+    #dist1 = Label(window)
+    #dist1.config(text="Distance: {:.3f}".format(cp.red_dot_distance))
+    #rad3.grid(row=6, column=3)
+    #rad4.grid(row=7, column=3)
+    #dist1.grid(row=8, column=3)
 
 
     #rad5 = Radiobutton(window, text='One Cyan Dot', value=1, variable=cp.cyan_dot_count)
@@ -1138,16 +954,25 @@ def display_cell(image, id):
     #rad5.grid(row=6, column=5)
     #rad6.grid(row=7, column=5)
 
-    rad7 = Radiobutton(window, text='One Green Dot', value=1, variable=cp.green_dot_count)
-    rad8 = Radiobutton(window, text='Two Green Dot', value=2, variable=cp.green_dot_count)
-    intense1 = Label(window)
-    intense1.config(text="Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
-    rad7.grid(row=6, column=4)
-    rad8.grid(row=7, column=4)
-    intense1.grid(row=8, column=4)
+    #rad7 = Radiobutton(window, text='One Green Dot', value=1, variable=cp.green_dot_count)
+    #rad8 = Radiobutton(window, text='Two Green Dot', value=2, variable=cp.green_dot_count)
+    try:
+        intense1 = Label(window)
+        intense1.config(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
+        intense2 = Label(window)
+        intense2.config(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
+        intense1.grid(row=6, column=4)
+        intense2.grid(row=7, column=4)
 
-    next_btn = Button(window, text="SAVE", command=save)
-    next_btn.grid(row=6, column=6, rowspan=2)
+    except:
+        print("error with this cell intensity")
+    #rad7.grid(row=6, column=4)
+    #rad8.grid(row=7, column=4)
+    ignore_txt = 'IGNORE'
+    if cp_dict[(image,id)].ignored:
+        ignore_txt = 'ENABLE'
+    ignore_btn = Button(window, text=ignore_txt, command=partial(ignore, image, id))
+    ignore_btn.grid(row=6, column=7, rowspan=2)
 
 
     next_btn = Button(window, text="Next Pair", command=partial(display_cell, image, id+1))
@@ -1176,6 +1001,7 @@ def display_cell(image, id):
     image_next_btn.grid(row=4, column=6)
     image_prev_btn = Button(window, text="Previous Image", command=partial(display_cell, prev, 1))
     image_prev_btn.grid(row=4, column=0)
+    cp_dict[(image, id)] = cp
 
 window = Tk()
 
@@ -1183,6 +1009,10 @@ window.title("Yeast Analysis Tool")
 window.geometry('1400x1200')
 btn = Button(window, text="Start Analysis", command=segment_images)
 btn.grid(row=0, column=0)
+
+#TODO:   add a file output name
+export_btn = Button(window, text='Export to CSV', command=export_to_csv)
+export_btn.grid(row=0, column=1)
 
 distvar = StringVar()
 
@@ -1198,6 +1028,9 @@ input_btn.grid(row=1, column=0)
 
 output_btn = Button(text="Set Output Directory", command=set_output_directory)
 output_btn.grid(row=2, column=0)
+
+ignore_btn = Button(window, text="IGNORE")
+#ignore_btn.grid(row=6, column=7, rowspan=2)
 
 kernel_size_lbl = Label(window, text="Kernel Size")
 kernel_size_lbl.grid(row=1, column=3)
