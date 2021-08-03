@@ -44,19 +44,26 @@ class Contour(Enum):
 
 def set_input_directory():
     global input_dir
+    old = input_dir
     global input_lbl
     input_dir = filedialog.askdirectory(parent=window, title='Choose the Directory with the input Images',
                                         initialdir=input_dir)
     #TODO: This updates the variable, but I need to make it update the string on the screen
-
+    if input_dir == "":
+        input_dir = old
+        return
     input_lbl.config(text = input_dir)
     #print (input_dir)
 
 def set_output_directory():
     global output_dir
+    old = output_dir
     global output_lbl
     output_dir = filedialog.askdirectory(parent=window, title='Choose the Directory to output Segmented Images',
                                          initialdir=output_dir)
+    if output_dir == "":
+        output_dir = old
+        return
     output_lbl.config(text = output_dir)
 
 class CellPair:
@@ -122,6 +129,8 @@ class CellPair:
         self.cell_total_points = total_points
 
     def get_GFP_Nucleus_Intensity(self, contour_type):
+        if self.nucleus_intensity.get(contour_type) == None:
+            return (0, 0)
         if self.nucleus_intensity[contour_type]  == 0:   # this causes an error if nothing has been set.  This is expected
             print ("Intensity is 0, this is unlikely")
         return self.nucleus_intensity[contour_type] , self.nucleus_total_points
@@ -192,8 +201,8 @@ def export_to_csv():
     from datetime import datetime
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
 
-    #TODO custom filename
-    with open('filename.csv', mode='w') as outfile:
+    csv_out = filedialog.asksaveasfilename(parent=window, title='Save as...', initialdir='.', defaultextension='.csv') 
+    with open(csv_out, mode='w') as outfile:
         outfile_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         #write headers
         # Image name, cell id, date, time, software version number, thresholding technique, contour technique, smoothing technique
@@ -217,8 +226,8 @@ def export_to_csv():
             line.append(kernel_deviation_input.get())
             line.append('contour')  # we might make this variable in the future
             line.append('cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU') # we might make this variable in the future
-            line.append(cp.nucleus_intensity)   # nuclear gfp
-            line.append(cp.cell_intensity)   # cellular gfp
+            line.append(cp.get_GFP_Nucleus_Intensity(Contour.CONTOUR)[0])   # nuclear gfp
+            line.append(cp.get_GFP_Cell_Intensity()[0])   # cellular gfp
             line.append(cp.get_ignored())   # check if the user has invalidated this sample
             outfile_writer.writerow(line)
 
