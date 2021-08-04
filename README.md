@@ -1,15 +1,24 @@
 # YeastAnalysisTool
 
-For usage on a Mac, do the following.
+You need to make sure git, virtualenv, and python3 are installed.
+
+For usage on a Mac, do the following in a terminal.
 
 
 git clone https://github.com/BrentLagesse/YeastAnalysisTool.git
+
 cd YeastAnalysisTool
+
 virtualenv venv
+
 source venv/bin/activate
+
 pip3 install -r requirements.mac.txt
+
 mkdir weights
+
 mkdir outputs
+
 mkdir outputs/segmented
 
 Then -- Download this link https://drive.google.com/file/d/1moUKvWFYQoWg0z63F0JcSd3WaEPa4UY7/view?usp=sharing and put it in the weights directory you just made.
