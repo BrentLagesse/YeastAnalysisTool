@@ -838,8 +838,19 @@ def get_stats(cp):
 
     return Image.fromarray(edit_testimg), Image.fromarray(edit_GFP_img)
 
+#TODO:  Deal with resizing
+def on_resize(event):
+    try:
+        w = width
+        h = height
+    except:
+        return
+
+
 def display_cell(image, id):
     global ignore_btn
+    win_width = window.winfo_width()
+    win_height = window.winfo_height()
     max_id = len(image_dict[image])
     if id < 1:
         id = max_id
@@ -851,43 +862,76 @@ def display_cell(image, id):
     if cp == None:
         cp = CellPair(image, id)
         cp_dict[(image, id)] = cp
+    main_size_x = int(0.6 * win_width)
+    main_size_y = int(0.6 * win_height)
+    cell_size_x = int(0.23*main_size_x)
+    cell_size_y = int(0.23*main_size_x)
 
     im_cherry, im_gfp = get_stats(cp)
     image_loc = output_dir + 'segmented/' + cp.get_DIC()
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(width)/float(height)
-    im = im.resize((int(scale * 800), 800), Image.ANTIALIAS)
+    if height > width:
+        scale = float(width)/float(height)
+    else:
+        scale = float(height) / float(width)
+    im = im.resize((int(scale * main_size_x), main_size_y), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     img_label.configure(image=img)
     img_label.image = img
 
+
     image_loc = output_dir + 'segmented/' + cp.get_DIC(use_id=True)
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(width)/float(height)
-    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
+    if height > width:
+        scale = float(width) / float(height)
+        x_scaled = (int(scale * cell_size_x))
+        y_scaled = cell_size_y
+    else:
+        scale = float(height) / float(width)
+        x_scaled = cell_size_x
+        y_scaled = int(scale * cell_size_y)
+    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     DIC_label.configure(image=img)
     DIC_label.image = img
+    DIC_label_text.configure(text="DIC")
 
     image_loc = output_dir + 'segmented/' + cp.get_DAPI(use_id=True)
     im = Image.open(image_loc)
     width, height = im.size
-    scale = float(width)/float(height)
-    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
+    if height > width:
+        scale = float(width) / float(height)
+        x_scaled = (int(scale * cell_size_x))
+        y_scaled = cell_size_y
+    else:
+        scale = float(height) / float(width)
+        x_scaled = cell_size_x
+        y_scaled = int(scale * cell_size_y)
+    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     DAPI_label.configure(image=img)
     DAPI_label.image = img
+    DAPI_label_text.configure(text="DAPI")
 
     image_loc = output_dir + 'segmented/' + cp.get_mCherry(use_id=True)
     im = im_cherry
     width, height = im.size
-    scale = float(width)/float(height)
-    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
+    if height > width:
+        scale = float(width) / float(height)
+        x_scaled = (int(scale * cell_size_x))
+        y_scaled = cell_size_y
+    else:
+        scale = float(height) / float(width)
+        x_scaled = cell_size_x
+        y_scaled = int(scale * cell_size_y)
+    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     mCherry_label.configure(image=img)
     mCherry_label.image = img
+    mCherry_label_text.configure(text="mCherry")
+
 
 
 
@@ -898,8 +942,15 @@ def display_cell(image, id):
     #image_loc = output_dir + 'segmented/' + cp.get_CFP(use_id=True)
     #im = Image.open(image_loc)
     #width, height = im.size
-    #scale = float(height) / float(width)
-    #im = im.resize((200, int(scale * 200)), Image.ANTIALIAS)
+    # if height > width:
+    #     scale = float(width) / float(height)
+    #     x_scaled = (int(scale * cell_size_x))
+    #     y_scaled = cell_size_y
+    # else:
+    #     scale = float(height) / float(width)
+    #     x_scaled = cell_size_x
+    #     y_scaled = int(scale * cell_size_y)
+    # im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
     #img = ImageTk.PhotoImage(im)
     #CFP_label.configure(image=img)
     #CFP_label.image = img
@@ -931,11 +982,19 @@ def display_cell(image, id):
     image_loc = output_dir + 'segmented/' + cp.get_GFP(use_id=True)
     im = im_gfp
     width, height = im.size
-    scale = float(width)/float(height)
-    im = im.resize((int(scale * 200), 200), Image.ANTIALIAS)
+    if height > width:
+        scale = float(width) / float(height)
+        x_scaled = (int(scale * cell_size_x))
+        y_scaled = cell_size_y
+    else:
+        scale = float(height) / float(width)
+        x_scaled = cell_size_x
+        y_scaled = int(scale * cell_size_y)
+    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
     img = ImageTk.PhotoImage(im)
     GFP_label.configure(image=img)
     GFP_label.image = img
+    GFP_label_text.configure(text="GFP")
 
     #chk_state = BooleanVar()
     #chk_state.set(False)  # set this with whatever we predict
@@ -970,8 +1029,8 @@ def display_cell(image, id):
         intense1.config(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
         intense2 = Label(window)
         intense2.config(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
-        intense1.grid(row=6, column=4)
-        intense2.grid(row=7, column=4)
+        intense1.grid(row=7, column=4)
+        intense2.grid(row=8, column=4)
 
     except:
         print("error with this cell intensity")
@@ -981,13 +1040,13 @@ def display_cell(image, id):
     if cp_dict[(image,id)].ignored:
         ignore_txt = 'ENABLE'
     ignore_btn = Button(window, text=ignore_txt, command=partial(ignore, image, id))
-    ignore_btn.grid(row=6, column=7, rowspan=2)
+    ignore_btn.grid(row=7, column=7, rowspan=2)
 
 
     next_btn = Button(window, text="Next Pair", command=partial(display_cell, image, id+1))
-    next_btn.grid(row=9, column=4)
+    next_btn.grid(row=10, column=4)
     prev_btn = Button(window, text="Previous Pair", command=partial(display_cell, image, id-1))
-    prev_btn.grid(row=9, column=2)
+    prev_btn.grid(row=10, column=2)
 
     #TODO:  Do this in a less stupid way.
     found_me = False
@@ -1015,7 +1074,11 @@ def display_cell(image, id):
 window = Tk()
 
 window.title("Yeast Analysis Tool")
-window.geometry('1400x1200')
+width = window.winfo_screenwidth()
+height = window.winfo_screenheight()
+#setting tkinter window size
+window.geometry("%dx%d" % (width, height))
+window.bind("<Configure>", on_resize)
 btn = Button(window, text="Start Analysis", command=segment_images)
 btn.grid(row=0, column=0)
 
@@ -1063,22 +1126,35 @@ img_label = Label(window)
 img_label.grid(row=4, column=1, columnspan=5)
 
 ID_label = Label(window)
-ID_label.grid(row=5, column=0)
+ID_label.grid(row=6, column=0)
+
+DIC_label_text = Label(window, font=("Times New Roman", 18, "bold"))
+DIC_label_text.grid(row=5, column=1)
+
+DAPI_label_text = Label(window, foreground='blue', font=("Times New Roman", 18, "bold"))
+DAPI_label_text.grid(row=5, column=2)
+
+mCherry_label_text = Label(window, foreground='red', font=("Times New Roman", 18, "bold"))
+mCherry_label_text.grid(row=5, column=3)
+
+GFP_label_text = Label(window, foreground='green', font=("Times New Roman", 18, "bold"))
+GFP_label_text.grid(row=5, column=4)
+
 
 DIC_label = Label(window)
-DIC_label.grid(row=5, column=1)
+DIC_label.grid(row=6, column=1)
 
 DAPI_label = Label(window)
-DAPI_label.grid(row=5, column=2)
+DAPI_label.grid(row=6, column=2)
 
 mCherry_label = Label(window)
-mCherry_label.grid(row=5, column=3)
+mCherry_label.grid(row=6, column=3)
 
 GFP_label = Label(window)
-GFP_label.grid(row=5, column=4)
+GFP_label.grid(row=6, column=4)
 
 #CFP_label = Label(window)
-#CFP_label.grid(row=5, column=5)
+#CFP_label.grid(row=6, column=5)
 
 def callback(event):
     print("clicked at " + str(event.x) + ',' + str(event.y))
