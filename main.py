@@ -862,8 +862,8 @@ def display_cell(image, id):
     if cp == None:
         cp = CellPair(image, id)
         cp_dict[(image, id)] = cp
-    main_size_x = int(0.6 * win_width)
-    main_size_y = int(0.6 * win_height)
+    main_size_x = int(0.5 * win_width)
+    main_size_y = int(0.5 * win_height)
     cell_size_x = int(0.23*main_size_x)
     cell_size_y = int(0.23*main_size_x)
 
