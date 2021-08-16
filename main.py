@@ -264,11 +264,11 @@ def segment_images():
 
     if os.path.isdir(output_dir):
 
-        preprocessed_image_directory = output_dir + "/preprocessed_images/"
-        preprocessed_image_list = output_dir + "/preprocessed_images_list.csv"
-        rle_file = output_dir + "/compressed_masks.csv"
-        output_mask_directory = output_dir + "/masks/"
-        output_imagej_directory = output_dir + "/imagej/"
+        preprocessed_image_directory = output_dir + "preprocessed_images/"
+        preprocessed_image_list = output_dir + "preprocessed_images_list.csv"
+        rle_file = output_dir + "compressed_masks.csv"
+        output_mask_directory = output_dir + "masks/"
+        output_imagej_directory = output_dir + "imagej/"
 
         # Preprocess the images
         if opt.verbose:
