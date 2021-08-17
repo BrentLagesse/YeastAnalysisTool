@@ -1,6 +1,8 @@
 # YeastAnalysisTool
 
-You need to make sure git, virtualenv, and python3 are installed.
+You need to make sure git, virtualenv, and python3 are installed and are in the $PATH (you can type those command names on the commandline and your computer finds them).
+
+
 
 For usage on a Mac, do the following in a terminal.
 
