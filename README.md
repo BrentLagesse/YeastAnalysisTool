@@ -13,15 +13,9 @@ virtualenv venv
 
 source venv/bin/activate
 
-pip3 install -r requirements.mac.txt
+sh init.sh
 
-mkdir weights
-
-mkdir outputs
-
-mkdir outputs/segmented
-
-Then -- Download this link https://drive.google.com/file/d/1moUKvWFYQoWg0z63F0JcSd3WaEPa4UY7/view?usp=sharing and put it in the weights directory you just made.
+You can do this while the other script is still running -- Download this link https://drive.google.com/file/d/1moUKvWFYQoWg0z63F0JcSd3WaEPa4UY7/view?usp=sharing and put it in the weights directory the previous script just made.
 
 python3 main.py 
 
