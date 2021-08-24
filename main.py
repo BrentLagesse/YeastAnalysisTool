@@ -622,7 +622,7 @@ def get_stats(cp):
 
     # was RGBA2GRAY
     orig_gray_GFP = cv2.cvtColor(GFP_img, cv2.COLOR_RGB2GRAY)
-    orig_gray_GFP_no_bg, background = subtract_background_rolling_ball(orig_gray_GFP, 30, light_background=True,
+    orig_gray_GFP_no_bg, background = subtract_background_rolling_ball(orig_gray_GFP, 30, light_background=False,
                                                        use_paraboloid=False, do_presmooth=True)
     orig_gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
     kdev = int(kernel_deviation_input.get())
