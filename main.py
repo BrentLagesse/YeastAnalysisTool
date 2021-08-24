@@ -211,7 +211,7 @@ def export_to_csv():
             for cell in cells:
                 cp = cp_dict.get((image, cell))
                 if cp == None:   # create a new one and run stats
-                    cp = CellPair(image, cell)
+                    cp = CellPair(image, cell) 
                     get_stats(cp)
                     cp_dict[(image, cell)] = cp
 
@@ -619,6 +619,7 @@ def get_stats(cp):
     cell_intensity_gray = cv2.cvtColor(img_for_cell_intensity, cv2.COLOR_RGB2GRAY)
 
     # was RGBA2GRAY
+    orig_gray_GFP = cv2.cvtColor(GFP_img, cv2.COLOR_RGB2GRAY)
     orig_gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
     kdev = int(kernel_deviation_input.get())
     ksize = int(kernel_size_input.get())
@@ -806,13 +807,13 @@ def get_stats(cp):
 
     intensity_sum = 0
     for p in pts_contour:
-        intensity_sum += orig_gray[p[0]][p[1]]
+        intensity_sum += orig_gray_GFP[p[0]][p[1]]
     cp.set_GFP_Nucleus_Intensity(Contour.CONTOUR, intensity_sum, len(pts_contour))
 
 
     cell_intensity_sum = 0
     for p in cell_pts_contour:
-        cell_intensity_sum += orig_gray[p[0]][p[1]]
+        cell_intensity_sum += orig_gray_GFP[p[0]][p[1]]
     cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(cell_pts_contour))
 
 
