@@ -24,11 +24,13 @@ from mrcnn.my_inference import predict_images
 from mrcnn.preprocess_images import preprocess_images
 from mrcnn.convert_to_image import convert_to_image, convert_to_imagej
 from enum import Enum
-from PIL import TiffImagePlugin
+from cv2_rolling_ball import subtract_background_rolling_ball
 
 input_dir = opt.input_directory
 output_dir = opt.output_directory
 ignore_btn = None
+
+
 
 
 image_dict = dict()    # image -> list of cell ids
@@ -620,6 +622,8 @@ def get_stats(cp):
 
     # was RGBA2GRAY
     orig_gray_GFP = cv2.cvtColor(GFP_img, cv2.COLOR_RGB2GRAY)
+    orig_gray_GFP_no_bg, background = subtract_background_rolling_ball(orig_gray_GFP, 30, light_background=True,
+                                                       use_paraboloid=False, do_presmooth=True)
     orig_gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
     kdev = int(kernel_deviation_input.get())
     ksize = int(kernel_size_input.get())
@@ -787,8 +791,10 @@ def get_stats(cp):
     # Circle Mask
     #cv2.circle(mask_circle, center1, radius1, 255, -1)
     #cv2.drawContours(mask_convex, [h1, ], 0, 255, 1)
-    cv2.drawContours(mask_contour, [best_contour], 0, 255, 1)
-    cv2.drawContours(cell_mask, [largest_cell_cnt], 0, 255, 1)
+    #cv2.drawContours(mask_contour, [best_contour], 0, 255, 1)
+    cv2.fillPoly(mask_contour, [best_contour], 255)
+    #cv2.drawContours(cell_mask, [largest_cell_cnt], 0, 255, 1)
+    cv2.fillPoly(cell_mask, [largest_cell_cnt], 255)
 
     #pts_circle = np.transpose(np.nonzero(mask_circle))
     #pts_convex = np.transpose(np.nonzero(mask_convex))
@@ -807,13 +813,13 @@ def get_stats(cp):
 
     intensity_sum = 0
     for p in pts_contour:
-        intensity_sum += orig_gray_GFP[p[0]][p[1]]
+        intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
     cp.set_GFP_Nucleus_Intensity(Contour.CONTOUR, intensity_sum, len(pts_contour))
 
 
     cell_intensity_sum = 0
     for p in cell_pts_contour:
-        cell_intensity_sum += orig_gray_GFP[p[0]][p[1]]
+        cell_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
     cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(cell_pts_contour))
 
 

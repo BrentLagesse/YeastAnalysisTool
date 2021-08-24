@@ -49,3 +49,4 @@ typing-extensions==3.7.4.3
 urllib3==1.26.6
 Werkzeug==2.0.1
 wrapt==1.12.1
+opencv-rolling-ball==1.0.1
