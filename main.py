@@ -31,7 +31,7 @@ output_dir = opt.output_directory
 ignore_btn = None
 
 
-
+outline_dict = dict()  # store the outlines so I don't have to reprocess them
 
 image_dict = dict()    # image -> list of cell ids
 cp_dict = dict()        # (image, id) -> cp
@@ -252,6 +252,7 @@ def segment_images():
     global GFP_label
 #    global CFP_label
     global ID_label
+    global outline_dict
 
 
 
@@ -367,7 +368,7 @@ def segment_images():
                 image = np.tile(image, 3)
 
             # Open the segmentation file
-            seg = np.array(Image.open(segmentation_name))
+            seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/2021_0629_M2210_004_R3D_REF.tif
 
             # Create a raw file to store the outlines
             outlines = np.zeros(seg.shape)
@@ -504,6 +505,7 @@ def segment_images():
 
 
 
+
             # Overlay the outlines on the original image in green
             image_outlined = image.copy()
             image_outlined[outlines > 0] = (0, 255, 0)
@@ -565,7 +567,7 @@ def segment_images():
                 tmp[np.where(seg == i)] = 1
                 tmp = tmp - skimage.morphology.binary_erosion(tmp)
                 outlines += tmp
-
+            
             # Overlay the outlines on the original image in green
             image_outlined = image.copy()
             image_outlined[outlines > 0] = (0, 255, 0)
@@ -576,11 +578,31 @@ def segment_images():
                 no_outline_image = images.split('.')[0] + '-' + str(i) + '-no_outline.tif'
 
 
+
+
+
+
                 a = np.where(seg == i)
                 min_x = max(np.min(a[0]) - 1, 0)
-                max_x = min(np.max(a[0])+1, seg.shape[0])
-                min_y = max(np.min(a[1])-1, 0)
+                max_x = min(np.max(a[0]) + 1, seg.shape[0])
+                min_y = max(np.min(a[1]) - 1, 0)
                 max_y = min(np.max(a[1]) + 1, seg.shape[1])
+
+                # a[0] contains the x coords and a[1] contains the y coords
+                # save this to use later when I want to calculate cellular intensity
+
+                #convert from absolute location to relative location for later use
+
+
+                if not os.path.exists(output_dir + 'masks/' + base_image_name + '-' + str(i) + '.outline'):
+                    with open(output_dir + 'masks/' + base_image_name + '-' + str(i) + '.outline', 'w') as csvfile:
+                        csvwriter = csv.writer(csvfile)
+                        csvwriter.writerows(zip(a[0] - min_x, a[1] - min_y))
+
+
+
+
+
 
                 cellpair_image = image_outlined[min_x: max_x, min_y:max_y]
                 not_outlined_image = image[min_x: max_x, min_y:max_y]
@@ -638,20 +660,24 @@ def get_stats(cp):
     ret, thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
 
     # Some of the cell outlines are split into two circles.  We blur this so that the contour will cover  both of them
-    cell_intensity_gray = cv2.GaussianBlur(cell_intensity_gray, (3, 3), 1)
+
+    cell_intensity_gray = cv2.GaussianBlur(cell_intensity_gray, (3,3), 1)
     # plt.title("cell_int_gray")
     # plt.imshow(cell_intensity_gray, cmap='gray')
     # plt.show()
     # plt.title("cell_int")
     # plt.imshow(img_for_cell_intensity, cmap='gray')
     # plt.show()
-    cell_int_ret, cell_int_thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
+    cell_int_ret, cell_int_thresh = cv2.threshold(cell_intensity_gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
     cell_int_cont, cell_int_h = cv2.findContours(cell_int_thresh, 1, 2)
 
     #we want the biggest contour because that'll be our cellular intensity boundary
     largest = 0
     largest_cell_cnt = None
-    for cnt in cell_int_cont:
+    #TODO:  I think I should join the two largest that aren't the full box
+    for i, cnt in enumerate(cell_int_cont):
+        #if i == len(cell_int_cont) - 1:    # this is not robust #TODO fix it  -- this throws out the full box contour
+        #    continue
         area = cv2.contourArea(cnt)
         if  area > largest:
             largest = area
@@ -773,7 +799,7 @@ def get_stats(cp):
     #cv2.drawContours(edit_GFP_img, [h1, ], 0, 255, 1)
     cv2.drawContours(edit_testimg, [best_contour], 0, (0, 255, 0), 1)
     cv2.drawContours(edit_GFP_img, [best_contour], 0, (0, 255, 0), 1)
-    cv2.drawContours(edit_GFP_img, [largest_cell_cnt], 0, (255,0,0), 1)
+    #cv2.drawContours(edit_GFP_img, [largest_cell_cnt], 0, (255,0,0), 1)
 
     # Circles instead of contours
     #cv2.circle(edit_testimg, center1, radius1, (255, 0, 0), 1)
@@ -793,13 +819,25 @@ def get_stats(cp):
     #cv2.drawContours(mask_convex, [h1, ], 0, 255, 1)
     #cv2.drawContours(mask_contour, [best_contour], 0, 255, 1)
     cv2.fillPoly(mask_contour, [best_contour], 255)
+
+    # read in the outline file if you need it
+    border_cells = []
+    with open(output_dir + 'masks/' + cp.get_base_name() + '-' + str(cp.id) + '.outline', 'r') as csvfile:
+        csvreader = csv.reader(csvfile)
+        for row in csvreader:
+            border_cells.append([int(row[0]), int(row[1])])
+
+    #cell_list = np.array(border_cells).reshape((-1, 1, 2)).astype(np.int32)
+    #cv2.fillPoly(cell_mask, [cell_ctr], 255)
+
+    #approx = cv2.approxPolyDP(largest_cell_cnt, 0.01 * cv2.arcLength(largest_cell_cnt, True), True)
     #cv2.drawContours(cell_mask, [largest_cell_cnt], 0, 255, 1)
-    cv2.fillPoly(cell_mask, [largest_cell_cnt], 255)
+    #cv2.fillPoly(cell_mask, [largest_cell_cnt], 255)
 
     #pts_circle = np.transpose(np.nonzero(mask_circle))
     #pts_convex = np.transpose(np.nonzero(mask_convex))
     pts_contour = np.transpose(np.nonzero(mask_contour))
-    cell_pts_contour = np.transpose(np.nonzero(cell_mask))
+    #cell_pts_contour = np.transpose(np.nonzero(cell_mask))
 
     # intensity_sum = 0
     # for p in pts_circle:
@@ -817,10 +855,11 @@ def get_stats(cp):
     cp.set_GFP_Nucleus_Intensity(Contour.CONTOUR, intensity_sum, len(pts_contour))
 
 
+
     cell_intensity_sum = 0
-    for p in cell_pts_contour:
+    for p in border_cells:
         cell_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
-    cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(cell_pts_contour))
+    cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(border_cells))
 
 
 
