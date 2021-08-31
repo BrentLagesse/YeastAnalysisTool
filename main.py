@@ -41,6 +41,7 @@ cp_dict = dict()        # (image, id) -> cp
 n = 0
 
 
+
 class Contour(Enum):
     CONTOUR = 0
     CONVEX = 1
@@ -200,6 +201,7 @@ def load_result(cell_id=0):
 def export_to_csv():
     global image_dict
     global cp_dict
+    global drop_ignored
 
 
     from datetime import datetime
@@ -210,7 +212,7 @@ def export_to_csv():
         outfile_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         #write headers
         # Image name, cell id, date, time, software version number, thresholding technique, contour technique, smoothing technique
-        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'user invalidated'])
+        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'cytoplasmic intensity', 'nuc int/cyto int', 'user invalidated'])
         for image, cells  in image_dict.items():
             for cell in cells:
                 cp = cp_dict.get((image, cell))
@@ -219,21 +221,30 @@ def export_to_csv():
                     get_stats(cp)
                     cp_dict[(image, cell)] = cp
 
-        for key, cp in cp_dict.items():
-
-            line = list()  #all the elements to write
-
-            line.append(key[0])
-            line.append(key[1])
-            line.append(now)
-            line.append(kernel_size_input.get())
-            line.append(kernel_deviation_input.get())
-            line.append('contour')  # we might make this variable in the future
-            line.append('cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU') # we might make this variable in the future
-            line.append(cp.get_GFP_Nucleus_Intensity(Contour.CONTOUR)[0])   # nuclear gfp
-            line.append(cp.get_GFP_Cell_Intensity()[0])   # cellular gfp
-            line.append(cp.get_ignored())   # check if the user has invalidated this sample
-            outfile_writer.writerow(line)
+                if cp.get_ignored() and drop_ignored.get():
+                    continue
+                line = list()  #all the elements to write
+                try:
+                    nucleus_intensity = cp.get_GFP_Nucleus_Intensity(Contour.CONTOUR)[0]
+                    cellular_intensity = cp.get_GFP_Cell_Intensity()[0]
+                    cytoplasmic_intensity = cellular_intensity - nucleus_intensity
+                    nuc_div_cyto_intensity = float(nucleus_intensity)/float(cytoplasmic_intensity)
+                except:
+                    print('Invalid values in iamge ' + str(image) + '  and cell ' + str(cell) + '... skipping cell')
+                    continue
+                line.append(image)
+                line.append(cell)
+                line.append(now)
+                line.append(kernel_size_input.get())
+                line.append(kernel_deviation_input.get())
+                line.append('contour')  # we might make this variable in the future
+                line.append('cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU') # we might make this variable in the future
+                line.append(nucleus_intensity)   # nuclear gfp
+                line.append(cellular_intensity)   # cellular gfp
+                line.append(cytoplasmic_intensity)
+                line.append(nuc_div_cyto_intensity)
+                line.append(cp.get_ignored())   # check if the user has invalidated this sample
+                outfile_writer.writerow(line)
 
 
 
@@ -1136,9 +1147,15 @@ window.bind("<Configure>", on_resize)
 btn = Button(window, text="Start Analysis", command=segment_images)
 btn.grid(row=0, column=0)
 
-#TODO:   add a file output name
+
+drop_ignored = BooleanVar()
+drop_ignored.set(True)
+
 export_btn = Button(window, text='Export to CSV', command=export_to_csv)
 export_btn.grid(row=0, column=1)
+
+drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
+drop_ignored_checkbox.grid(row=0, column=2)
 
 distvar = StringVar()
 
