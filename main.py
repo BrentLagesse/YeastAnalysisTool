@@ -30,6 +30,8 @@ input_dir = opt.input_directory
 output_dir = opt.output_directory
 ignore_btn = None
 
+current_image = None
+current_cell = None
 
 outline_dict = dict()  # store the outlines so I don't have to reprocess them
 
@@ -895,6 +897,12 @@ def on_resize(event):
 
 def display_cell(image, id):
     global ignore_btn
+    global current_image
+    global current_cell
+
+    current_image = image
+    current_cell = id
+
     win_width = window.winfo_width()
     win_height = window.winfo_height()
     max_id = len(image_dict[image])
@@ -1206,10 +1214,45 @@ def callback(event):
     print("clicked at " + str(event.x) + ',' + str(event.y))
 
 def key(event):
+
+    global current_image
+    global current_cell
+
+
+    if current_image == None or current_cell == None:
+        return
+
+    #TODO:  Do this in a less stupid way.
+    found_me = False
+    next = None
+    prev = None
+    for k in image_dict.keys():
+        if found_me:
+            next = k
+            break
+        if k == current_image:
+            found_me = True
+        else:
+            prev = k
+    if next is None:
+        next = list(image_dict.keys())[0]
+    if prev is None:
+        prev = list(image_dict.keys())[len(image_dict)-1]
     print ("pressed " + str(repr(event.char)))
+    if event.keysym == 'Left':
+        display_cell(current_image, current_cell - 1)
+    if event.keysym == 'Right':
+        display_cell(current_image, current_cell + 1)
+    if event.keysym == 'Up':
+        display_cell(prev, 0)
+    if event.keysym == 'Down':
+        display_cell(next, 0)
 
 img_label.bind("<Button-1>", callback)
-window.bind("<Key>", key)
+window.bind("<Left>", key)
+window.bind("<Right>", key)
+window.bind("<Up>", key)
+window.bind("<Down>", key)
 
 
 #canvas = Canvas(window, width = 1000, height = 1000)
