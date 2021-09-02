@@ -383,103 +383,110 @@ def segment_images():
             # Open the segmentation file
             seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/2021_0629_M2210_004_R3D_REF.tif
 
-            # Create a raw file to store the outlines
+
+            #TODO:   If G1 Arrested, we don't want to merge neighbors and ignore non-budding cells
+            #choices = ['Metaphase Arrested', 'G1 Arrested']
             outlines = np.zeros(seg.shape)
-            ignore_list = list()
-            single_cell_list = list()
-            # merge cell pairs
-            neighbor_count = dict()
-            closest_neighbors = dict()
-            for i in range(1, int(np.max(seg) + 1)):
-                cells = np.where(seg == i)
-                #examine neighbors
-                neighbor_list = list()
-                for cell in zip(cells[0], cells[1]):
-                    #TODO:  account for going over the edge without throwing out the data
+            if choice_var.get() == 'Metaphase Arrested':
+                # Create a raw file to store the outlines
 
-                    try:
-                        neighbor_list = get_neighbor_count(seg, cell, 3)
-                        #neighbor_list.append(seg[cell[0]-1][cell[1]-1])  #top left
-                        #neighbor_list.append(seg[cell[0]][cell[1]-1])  #top
-                        #neighbor_list.append(seg[cell[0]+1][cell[1]-1])  #top right
-                        #neighbor_list.append(seg[cell[0]-1][cell[1]])  #left
-                        #neighbor_list.append(seg[cell[0]+1][cell[1]])  #right
-                        #neighbor_list.append(seg[cell[0]-1][cell[1]+1])  #bottom left
-                        #neighbor_list.append(seg[cell[0]][cell[1]+1])  #bottom
-                        #neighbor_list.append(seg[cell[0]+1][cell[1]+1])  #bottom right
-                    except:
-                        continue
-
-                    for neighbor in neighbor_list:
-                        if int(neighbor) == i or int(neighbor) == 0:
-                            continue
-                        if neighbor in neighbor_count:
-                            neighbor_count[neighbor] += 1
-                        else:
-                            neighbor_count[neighbor] = 1
-
-                sorted_dict = {k: v for k, v in sorted(neighbor_count.items(), key=lambda item: item[1])}
-                #v = list(neighbor_count.values())
-                #k = list(neighbor_count.keys())
-                if len(sorted_dict) == 0:
-                    print('found single cell at: ' + str(cell))
-                    single_cell_list.append(int(i))
-                else:
-                        #closest_neighbor = k[v.index(max(v))]
-                    if len(sorted_dict) == 1:
-                        closest_neighbors[i] = list(sorted_dict.items())[0][0]
-                    else:
-                        top_val = list(sorted_dict.items())[0][1]
-                        second_val = list(sorted_dict.items())[1][1]
-                        if second_val > 0.5 * top_val:    # things got confusing, so we throw it and its neighbor out
-                            single_cell_list.append(int(i))
-                            for cluster_cell in neighbor_count:
-                                single_cell_list.append(int(cluster_cell))
-                        else:
-                            closest_neighbors[i] = list(sorted_dict.items())[0][0]
-
-                #reset for the next cell
+                ignore_list = list()
+                single_cell_list = list()
+                # merge cell pairs
                 neighbor_count = dict()
+                closest_neighbors = dict()
+                for i in range(1, int(np.max(seg) + 1)):
+                    cells = np.where(seg == i)
+                    #examine neighbors
+                    neighbor_list = list()
+                    for cell in zip(cells[0], cells[1]):
+                        #TODO:  account for going over the edge without throwing out the data
 
-            for k, v in closest_neighbors.items():
-                if v in closest_neighbors:
-                    if int(v) in ignore_list:
-                        single_cell_list.append(int(k))
+                        try:
+                            neighbor_list = get_neighbor_count(seg, cell, 3)
+                            #neighbor_list.append(seg[cell[0]-1][cell[1]-1])  #top left
+                            #neighbor_list.append(seg[cell[0]][cell[1]-1])  #top
+                            #neighbor_list.append(seg[cell[0]+1][cell[1]-1])  #top right
+                            #neighbor_list.append(seg[cell[0]-1][cell[1]])  #left
+                            #neighbor_list.append(seg[cell[0]+1][cell[1]])  #right
+                            #neighbor_list.append(seg[cell[0]-1][cell[1]+1])  #bottom left
+                            #neighbor_list.append(seg[cell[0]][cell[1]+1])  #bottom
+                            #neighbor_list.append(seg[cell[0]+1][cell[1]+1])  #bottom right
+                        except:
+                            continue
+
+                        for neighbor in neighbor_list:
+                            if int(neighbor) == i or int(neighbor) == 0:
+                                continue
+                            if neighbor in neighbor_count:
+                                neighbor_count[neighbor] += 1
+                            else:
+                                neighbor_count[neighbor] = 1
+
+                    sorted_dict = {k: v for k, v in sorted(neighbor_count.items(), key=lambda item: item[1])}
+                    #v = list(neighbor_count.values())
+                    #k = list(neighbor_count.keys())
+                    if len(sorted_dict) == 0:
+                        print('found single cell at: ' + str(cell))
+                        single_cell_list.append(int(i))
+                    else:
+                            #closest_neighbor = k[v.index(max(v))]
+                        if len(sorted_dict) == 1:
+                            closest_neighbors[i] = list(sorted_dict.items())[0][0]
+                        else:
+                            top_val = list(sorted_dict.items())[0][1]
+                            second_val = list(sorted_dict.items())[1][1]
+                            if second_val > 0.5 * top_val:    # things got confusing, so we throw it and its neighbor out
+                                single_cell_list.append(int(i))
+                                for cluster_cell in neighbor_count:
+                                    single_cell_list.append(int(cluster_cell))
+                            else:
+                                closest_neighbors[i] = list(sorted_dict.items())[0][0]
+
+                    #reset for the next cell
+                    neighbor_count = dict()
+
+                for k, v in closest_neighbors.items():
+                    if v in closest_neighbors:
+                        if int(v) in ignore_list:
+                            single_cell_list.append(int(k))
+                            continue
+                        if closest_neighbors[int(v)] == int(k) and int(k) not in ignore_list:  # closest neighbors are reciprocal
+                            #TODO:  set them to all be the same cell
+                            to_update = np.where(seg == v)
+                            ignore_list.append(int(v))
+                            for update in zip(to_update[0], to_update[1]):
+                                seg[update[0]][update[1]] = k
+                        elif int(k) not in ignore_list:
+                            single_cell_list.append(int(k))
+
+                    else:
+                        print('cell already ignored')
+
+                # remove single cells or confusing cells
+                for cell in single_cell_list:
+                    seg[np.where(seg == cell)] = 0.0
+
+
+                # only merge if two cells are both each others closest neighbors
+                    # otherwise zero them out?
+                # rebase segment count
+                to_rebase = list()
+                for k, v in closest_neighbors.items():
+                    if k in ignore_list or k in single_cell_list:
                         continue
-                    if closest_neighbors[int(v)] == int(k) and int(k) not in ignore_list:  # closest neighbors are reciprocal
-                        #TODO:  set them to all be the same cell
-                        to_update = np.where(seg == v)
-                        ignore_list.append(int(v))
-                        for update in zip(to_update[0], to_update[1]):
-                            seg[update[0]][update[1]] = k
-                    elif int(k) not in ignore_list:
-                        single_cell_list.append(int(k))
+                    else:
+                        to_rebase.append(int(k))
+                to_rebase.sort()
 
-                else:
-                    print('cell already ignored')
+                for i, x in enumerate(to_rebase):
+                    seg[np.where(seg == x)] = i + 1
 
-            # remove single cells or confusing cells
-            for cell in single_cell_list:
-                seg[np.where(seg == cell)] = 0.0
-
-
-            # only merge if two cells are both each others closest neighbors
-                # otherwise zero them out?
-            # rebase segment count
-            to_rebase = list()
-            for k, v in closest_neighbors.items():
-                if k in ignore_list or k in single_cell_list:
-                    continue
-                else:
-                    to_rebase.append(int(k))
-            to_rebase.sort()
-
-            for i, x in enumerate(to_rebase):
-                seg[np.where(seg == x)] = i + 1
-
-            # now seg has the updated masks, so lets save them so we don't have to do this every time
-            seg_image = Image.fromarray(seg)
-            seg_image.save(output_dir + 'masks/' + image_name.split('.')[0]+ '-cellpairs' + '.tif')
+                # now seg has the updated masks, so lets save them so we don't have to do this every time
+                seg_image = Image.fromarray(seg)
+                seg_image.save(output_dir + 'masks/' + image_name.split('.')[0]+ '-cellpairs' + '.tif')
+            else:   #g1 arrested
+                pass
 
         for i in range(1, int(np.max(seg)) + 1):
             image_dict[image_name].append(i)
@@ -492,7 +499,10 @@ def segment_images():
             extspl = os.path.splitext(images)
             if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
                 continue
-            tif_image = images.split('.')[0] + '.tif'   # TODO:  Figure out if this line of code should be deleted -- leftover from 2 years ago
+            if_g1 = ''
+            #if choice_var.get() == 'G1 Arrested':   #if it is a g1 cell, do we really need a separate type of file?
+            #    if_g1 = '-g1'
+            tif_image = images.split('.')[0] + if_g1 + '.tif'
             if os.path.exists(output_dir + 'segmented/' + tif_image):
                 continue
             to_open = input_dir + images
@@ -627,6 +637,7 @@ def segment_images():
                     plt.clf()
 
     # if the image_dict is empty, then we didn't get anything interesting from the directory
+
     if len(image_dict) > 0:
         k, v = list(image_dict.items())[0]
         display_cell(k, v[0])
@@ -910,6 +921,11 @@ def display_cell(image, id):
     global ignore_btn
     global current_image
     global current_cell
+    global export_btn
+    global drop_ignored_checkbox
+
+    export_btn['state'] = NORMAL
+    drop_ignored_checkbox['state'] = NORMAL
 
     current_image = image
     current_cell = id
@@ -1151,11 +1167,24 @@ btn.grid(row=0, column=0)
 drop_ignored = BooleanVar()
 drop_ignored.set(True)
 
+choice_var = StringVar(window)
+choices = ['Metaphase Arrested', 'G1 Arrested']
+#choice_var.set(list(choices)[0])
+choice_var.set(choices[0])
+
+analysis_type_menu = OptionMenu(window, choice_var, choice_var.get(), *choices)   # This seems different than the documentation
+analysis_type_menu.grid(row=0, column=1)
+
+
+
 export_btn = Button(window, text='Export to CSV', command=export_to_csv)
-export_btn.grid(row=0, column=1)
+export_btn.grid(row=0, column=2)
+export_btn['state'] = DISABLED
+
 
 drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
-drop_ignored_checkbox.grid(row=0, column=2)
+drop_ignored_checkbox.grid(row=0, column=3)
+drop_ignored_checkbox['state'] = DISABLED
 
 distvar = StringVar()
 
