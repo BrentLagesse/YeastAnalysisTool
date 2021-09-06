@@ -294,7 +294,8 @@ def segment_images():
                           output_mask_directory,
                           preprocessed_image_directory,
                           preprocessed_image_list,
-                          verbose=opt.verbose)
+                          verbose=opt.verbose,
+                          use_cache = use_cache.get())
 
         if opt.verbose:
             print("\nRunning your images through the neural network...")
@@ -360,7 +361,7 @@ def segment_images():
         image_dict[image_name] = list()
         #cp = CellPair(output_dir + 'segmented/' + image_name.split('.')[0] + '.tif', output_dir + 'masks/' + image_name.split('.')[0] + '.tif')
         exist_check = os.path.exists(output_dir + 'masks/' + image_name.split('.')[0]+ '-cellpairs' + '.tif')
-        if exist_check:
+        if exist_check and use_cache.get():
             seg = np.array(Image.open(output_dir + 'masks/' + image_name.split('.')[0]+ '-cellpairs' + '.tif'))
             outlines = np.zeros(seg.shape)
         else:
@@ -503,7 +504,7 @@ def segment_images():
             #if choice_var.get() == 'G1 Arrested':   #if it is a g1 cell, do we really need a separate type of file?
             #    if_g1 = '-g1'
             tif_image = images.split('.')[0] + if_g1 + '.tif'
-            if os.path.exists(output_dir + 'segmented/' + tif_image):
+            if os.path.exists(output_dir + 'segmented/' + tif_image) and use_cache.get():
                 continue
             to_open = input_dir + images
             if os.path.isdir(to_open):
@@ -617,7 +618,7 @@ def segment_images():
                 #convert from absolute location to relative location for later use
 
 
-                if not os.path.exists(output_dir + 'masks/' + base_image_name + '-' + str(i) + '.outline'):
+                if not os.path.exists(output_dir + 'masks/' + base_image_name + '-' + str(i) + '.outline')  or not use_cache.get():
                     with open(output_dir + 'masks/' + base_image_name + '-' + str(i) + '.outline', 'w') as csvfile:
                         csvwriter = csv.writer(csvfile)
                         csvwriter.writerows(zip(a[0] - min_x, a[1] - min_y))
@@ -629,10 +630,10 @@ def segment_images():
 
                 cellpair_image = image_outlined[min_x: max_x, min_y:max_y]
                 not_outlined_image = image[min_x: max_x, min_y:max_y]
-                if not os.path.exists(output_dir + 'segmented/' + cell_tif_image):  # don't redo things we already have
+                if not os.path.exists(output_dir + 'segmented/' + cell_tif_image) or not use_cache.get():  # don't redo things we already have
                     plt.imsave(output_dir + 'segmented/' + cell_tif_image, cellpair_image, dpi=600, format='TIFF')
                     plt.clf()
-                if not os.path.exists(output_dir + 'segmented/' + no_outline_image):  # don't redo things we already have
+                if not os.path.exists(output_dir + 'segmented/' + no_outline_image) or not use_cache.get():  # don't redo things we already have
                     plt.imsave(output_dir + 'segmented/' + no_outline_image, not_outlined_image, dpi=600, format='TIFF')
                     plt.clf()
 
@@ -1167,23 +1168,29 @@ btn.grid(row=0, column=0)
 drop_ignored = BooleanVar()
 drop_ignored.set(True)
 
+use_cache = BooleanVar()
+use_cache.set(True)
+
 choice_var = StringVar(window)
 choices = ['Metaphase Arrested', 'G1 Arrested']
 #choice_var.set(list(choices)[0])
 choice_var.set(choices[0])
 
+use_cache_checkbox = Checkbutton(window, text='use cached masks', variable=use_cache)
+use_cache_checkbox.grid(row=0, column=1)
+
 analysis_type_menu = OptionMenu(window, choice_var, choice_var.get(), *choices)   # This seems different than the documentation
-analysis_type_menu.grid(row=0, column=1)
+analysis_type_menu.grid(row=0, column=2)
 
 
 
 export_btn = Button(window, text='Export to CSV', command=export_to_csv)
-export_btn.grid(row=0, column=2)
+export_btn.grid(row=0, column=3)
 export_btn['state'] = DISABLED
 
 
 drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
-drop_ignored_checkbox.grid(row=0, column=3)
+drop_ignored_checkbox.grid(row=0, column=4)
 drop_ignored_checkbox['state'] = DISABLED
 
 distvar = StringVar()
