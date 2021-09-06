@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 import os
 import skimage.exposure
+import skimage.filters
 
 '''Convert input images to RGB format in separate folders required by MRCNN
 
@@ -9,7 +10,7 @@ Arguments:
 inputdirectory: Input directory containing images.
 outputdirectory: Output directory to put new files in.
 outputfile: Path to save comma-delimited file that will tell the neural network the image paths.'''
-def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, verbose = False):
+def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, verbose = False, use_cache=True):
     if inputdirectory[-1] != "/":
         inputdirectory = inputdirectory + "/"
     if outputdirectory[-1] != "/":
@@ -32,7 +33,7 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             if verbose:
                 print ("Preprocessing ", imagename)
             existing_files = os.listdir(mask_dir)
-            if imagename in existing_files:   #skip this if we have a mask already
+            if imagename in existing_files and use_cache:   #skip this if we have a mask already
                 continue
             image = np.array(Image.open(inputdirectory + imagename))
             if len(image.shape) > 2:
@@ -45,10 +46,10 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             image = np.round(image * 255).astype(np.uint8)        #convert to 8 bit
             image = np.expand_dims(image, axis=-1)
             rgbimage = np.tile(image, 3)                          #convert to RGB
-
+            #rgbimage = skimage.filters.gaussian(rgbimage, sigma=(1,1))   # blur it first?
             imagename = imagename.split(".")[0]
 
-            if not os.path.exists(outputdirectory + imagename):
+            if not os.path.exists(outputdirectory + imagename) or not use_cache.get():
                 os.makedirs(outputdirectory + imagename)
                 os.makedirs(outputdirectory + imagename + "/images/")
             rgbimage = Image.fromarray(rgbimage)
