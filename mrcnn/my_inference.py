@@ -19,7 +19,7 @@ random.seed(seed)
 from PIL import Image
 import skimage.transform
 from skimage import img_as_ubyte
-
+from cv2_rolling_ball import subtract_background_rolling_ball
 
 import pandas as pd
 import os
@@ -133,6 +133,8 @@ def predict_images(test_path, sample_submission, outputfilename, rescale = False
         image_path = os.path.join(test_path, image_id, 'images', image_id + '.tif')
         original_image = np.array(Image.open(image_path))
 
+
+
         if rescale:
             height = original_image.shape[0]
             width = original_image.shape[1]
@@ -148,7 +150,8 @@ def predict_images(test_path, sample_submission, outputfilename, rescale = False
             original_image = original_image[:, :, [0, 0, 0]]  # flip r and b
         ####################################################################
         original_image = original_image[:, :, :3]
-
+        #original_image, background = subtract_background_rolling_ball(original_image, 50, light_background=False,
+        #                                                                   use_paraboloid=False, do_presmooth=True)
         ## Make prediction for that image
         results = model.detect([original_image], verbose=0)
 
