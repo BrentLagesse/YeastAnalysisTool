@@ -1266,6 +1266,16 @@ GFP_label.grid(row=6, column=4)
 def callback(event):
     print("clicked at " + str(event.x) + ',' + str(event.y))
 
+
+keybuf = []
+
+def timedout():
+    global current_image
+    if keybuf:
+        text = ''.join(keybuf)
+        keybuf.clear()
+        display_cell(current_image, int(text))
+
 def key(event):
 
     global current_image
@@ -1274,6 +1284,12 @@ def key(event):
 
     if current_image == None or current_cell == None:
         return
+
+    if event.char.isdigit():  # lets you type in integers to go to that cell directly
+        keybuf.append(event.char)
+        window.after(250, timedout)
+        return
+
 
     #TODO:  Do this in a less stupid way.
     found_me = False
@@ -1306,7 +1322,8 @@ window.bind("<Left>", key)
 window.bind("<Right>", key)
 window.bind("<Up>", key)
 window.bind("<Down>", key)
-
+for i in range(10):
+    window.bind(str(i), key)
 
 #canvas = Canvas(window, width = 1000, height = 1000)
 
