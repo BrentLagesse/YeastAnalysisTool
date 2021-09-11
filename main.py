@@ -87,6 +87,7 @@ class CellPair:
         self.cell_intensity = dict()
         self.cell_total_points = 0
         self.ignored = False
+        self.mcherry_line_gfp_intensity = 0
 
     def set_red_dot_distance(self, d):
         self.red_dot_distance = d
@@ -145,6 +146,11 @@ class CellPair:
             print ("Intensity is 0, this is unlikely")
         return self.cell_intensity, self.cell_total_points
 
+    def set_mcherry_line_GFP_intensity(self, intensity):
+        self.mcherry_line_gfp_intensity = intensity
+
+    def get_mcherry_line_GFP_intensity(self):
+        return self.mcherry_line_gfp_intensity
 
     def get_mCherry(self, use_id=False, outline=True):
         outlinestr = ''
@@ -212,7 +218,7 @@ def export_to_csv():
         outfile_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         #write headers
         # Image name, cell id, date, time, software version number, thresholding technique, contour technique, smoothing technique
-        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'cytoplasmic intensity', 'nuc int/cyto int', 'user invalidated'])
+        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'mcherry line width', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'cytoplasmic intensity', 'nuc int/cyto int', 'mcherry line gfp intensity', 'user invalidated'])
         for image, cells  in image_dict.items():
             for cell in cells:
                 cp = cp_dict.get((image, cell))
@@ -230,19 +236,21 @@ def export_to_csv():
                     cytoplasmic_intensity = cellular_intensity - nucleus_intensity
                     nuc_div_cyto_intensity = float(nucleus_intensity)/float(cytoplasmic_intensity)
                 except:
-                    print('Invalid values in iamge ' + str(image) + '  and cell ' + str(cell) + '... skipping cell')
+                    print('Invalid values in image ' + str(image) + '  and cell ' + str(cell) + '... skipping cell')
                     continue
                 line.append(image)
                 line.append(cell)
                 line.append(now)
                 line.append(kernel_size_input.get())
                 line.append(kernel_deviation_input.get())
+                line.append(mcherry_line_width_input.get())
                 line.append('contour')  # we might make this variable in the future
                 line.append('cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU') # we might make this variable in the future
                 line.append(nucleus_intensity)   # nuclear gfp
                 line.append(cellular_intensity)   # cellular gfp
                 line.append(cytoplasmic_intensity)
                 line.append(nuc_div_cyto_intensity)
+                line.append(cp.get_mcherry_line_GFP_intensity())
                 line.append(cp.get_ignored())   # check if the user has invalidated this sample
                 outfile_writer.writerow(line)
 
@@ -655,8 +663,14 @@ def ignore(image, id):
 
     # attempt to get distance
     #testimg = cv2.imread(image_loc, cv2.IMREAD_UNCHANGED)
+
+
+
+
+
 def get_stats(cp):
 
+    global mcherry_line_width_input
     #outlines screw up the analysis
     im = Image.open(output_dir + 'segmented/' + cp.get_mCherry(use_id=True, outline=False))
     im_GFP = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True, outline=False))
@@ -678,11 +692,14 @@ def get_stats(cp):
     if ksize%2 == 0:
         ksize += 1
         print("You used an even ksize, updating to odd number +1")
+    gray_mcherry=cv2.GaussianBlur(orig_gray, (5,5), 3)
+    ret_mcherry, thresh_mcherry = cv2.threshold(gray_mcherry, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
     gray = cv2.GaussianBlur(orig_gray, (ksize,ksize), kdev)
     # plt.title("blur")
     # plt.imshow(gray,  cmap='gray')
     # plt.show()
     ret, thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
+
 
     # Some of the cell outlines are split into two circles.  We blur this so that the contour will cover  both of them
 
@@ -710,14 +727,37 @@ def get_stats(cp):
 
 
     contours, h = cv2.findContours(thresh, 1, 2)
+    contours_mcherry = cv2.findContours(thresh_mcherry, 1, 2)
     #iterate through contours and throw out the largest (the box) and anything less than the second and third largest)
     # Contours finds the entire image as a contour and it seems to always put it in the contours[len(contours)].  We should do this more robustly in the future
+
+
+
+    #bestContours, bestArea = find_best_contours(contours)
+    #bestContours_mcherry, bestArea_mcherry = find_best_contours(contours_mcherry)
+
+    #these include the outlines already, so lets edit them
+    edit_im = Image.open(output_dir + 'segmented/' + cp.get_mCherry(use_id=True))
+    edit_im_GFP = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True))
+    edit_testimg = np.array(edit_im)
+    edit_GFP_img = np.array(edit_im_GFP)
+    #edit_testimg = cv2.cvtColor(edit_testimg, cv2.COLOR_GRAY2BGR)
+    #edit_GFP_img = cv2.cvtColor(edit_GFP_img, cv2.COLOR_GRAY2BGR)
+    best_contour = None
+
     bestContours = list()
     bestArea = list()
     for i, cnt in enumerate(contours):
+        #tester = orig_gray
+        if len(cnt) == 0:
+            continue
+        #cv2.drawContours(tester, cnt, 0, 255, 1)
+        #plt.imshow(tester,  cmap='gray')
+        #plt.show()
         if i == len(contours) - 1:    # this is not robust #TODO fix it
             continue
         area = cv2.contourArea(cnt)
+
         if len(bestContours) == 0:
             bestContours.append(i)
             bestArea.append(area)
@@ -735,30 +775,70 @@ def get_stats(cp):
             bestContours[1] = i
 
 
-
-    c1x = int()
-    c1y = int()
-    c2x = int()
-    c2y = int()
-
-
-    #these include the outlines already, so lets edit them
-    edit_im = Image.open(output_dir + 'segmented/' + cp.get_mCherry(use_id=True))
-    edit_im_GFP = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True))
-    edit_testimg = np.array(edit_im)
-    edit_GFP_img = np.array(edit_im_GFP)
-    #edit_testimg = cv2.cvtColor(edit_testimg, cv2.COLOR_GRAY2BGR)
-    #edit_GFP_img = cv2.cvtColor(edit_GFP_img, cv2.COLOR_GRAY2BGR)
-    best_contour = None
     if len(bestContours) == 0:
         print("we didn't find any contours")
         return edit_im, edit_im_GFP
 
-    if len(bestContours) == 2:   # "There can be only one!" - Connor MacLeod
+    bestContours_mcherry = list()
+    bestArea_mcherry = list()
+    for i, cnt in enumerate(contours_mcherry[0]):
+        #tester = orig_gray
+        if len(cnt) == 0:
+            continue
+        #cv2.drawContours(tester, cnt, 0, 255, 1)
+        #plt.imshow(tester,  cmap='gray')
+        #plt.show()
+        if i == len(contours_mcherry[0]) - 1:    # this is not robust #TODO fix it
+            continue
+        try:
+            area = cv2.contourArea(cnt)
+        except:  # no area
+            continue
+
+        if len(bestContours_mcherry) == 0:
+            bestContours_mcherry.append(i)
+            bestArea_mcherry.append(area)
+            continue
+        if len(bestContours_mcherry) == 1:
+            bestContours_mcherry.append(i)
+            bestArea_mcherry.append(area)
+        if area > bestArea_mcherry[0]:
+            bestArea_mcherry[1] = bestArea_mcherry[0]
+            bestArea_mcherry[0] = area
+            bestContours_mcherry[1] = bestContours_mcherry[0]
+            bestContours_mcherry[0] = i
+        elif area > bestArea_mcherry[1]:    # probably won't have a 3rd that is equal, but that would cause a problem
+            bestArea_mcherry[1] = area
+            bestContours_mcherry[1] = i
+
+    mcherry_line_pts = list()
+    if len(bestContours_mcherry) == 2:
+        c1 = contours_mcherry[0][bestContours_mcherry[0]]
+        c2 = contours_mcherry[0][bestContours_mcherry[1]]
+        M1 = cv2.moments(c1)
+        M2 = cv2.moments(c2)
+        # TODO:  This was code from when we wanted to get the distance between the mCherry centers
+        if M1['m00'] == 0 or M2['m00'] == 0:   # something has gone wrong
+            print("Warning:  The m00 moment = 0")
+            #plt.imshow(edit_testimg,  cmap='gray')
+            #plt.show()
+        else:
+
+            c1x = int(M1['m10'] / M1['m00'])
+            c1y = int(M1['m01'] / M1['m00'])
+            c2x = int(M2['m10'] / M2['m00'])
+            c2y = int(M2['m01'] / M2['m00'])
+            d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
+            #print ('Distance: ' + str(d))
+            cp.set_red_dot_distance(d)
+            cv2.line(edit_testimg, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input.get()))
+            mcherry_line_mask = np.zeros(gray.shape, np.uint8)
+            cv2.line(mcherry_line_mask, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input.get()))
+            mcherry_line_pts = np.transpose(np.nonzero(mcherry_line_mask))
+
+    if len(bestContours) == 2:  # "There can be only one!" - Connor MacLeod
         c1 = contours[bestContours[0]]
         c2 = contours[bestContours[1]]
-
-
         MERGE_CLOSEST = True
         if MERGE_CLOSEST:   # find the two closest points and just push c2 into c1 there
             smallest_distance = 999999999
@@ -816,10 +896,10 @@ def get_stats(cp):
 
     print("only 1 contour found")
     #M1 = cv2.moments(best_contour)
-    (x1, y1), radius1 = cv2.minEnclosingCircle(best_contour)
-    center1 = (int(x1), int(y1))
-    radius1 = int(radius1)
-    h1 = cv2.convexHull(best_contour)
+    #(x1, y1), radius1 = cv2.minEnclosingCircle(best_contour)
+    #center1 = (int(x1), int(y1))
+    #radius1 = int(radius1)
+    #h1 = cv2.convexHull(best_contour)
     #cv2.drawContours(edit_testimg, [h1, ], 0, 255, 1)
     #cv2.drawContours(edit_GFP_img, [h1, ], 0, 255, 1)
     cv2.drawContours(edit_testimg, [best_contour], 0, (0, 255, 0), 1)
@@ -836,6 +916,7 @@ def get_stats(cp):
     #mask_convex = np.zeros(gray.shape, np.uint8)
     mask_contour = np.zeros(gray.shape, np.uint8)
     cell_mask = np.zeros(gray.shape, np.uint8)
+
     # actual contour mask?
     #        cv2.drawContours(mask, [contours[cnt]], 255, 100, -1)
 
@@ -844,6 +925,7 @@ def get_stats(cp):
     #cv2.drawContours(mask_convex, [h1, ], 0, 255, 1)
     #cv2.drawContours(mask_contour, [best_contour], 0, 255, 1)
     cv2.fillPoly(mask_contour, [best_contour], 255)
+
 
     # read in the outline file if you need it
     border_cells = []
@@ -862,6 +944,7 @@ def get_stats(cp):
     #pts_circle = np.transpose(np.nonzero(mask_circle))
     #pts_convex = np.transpose(np.nonzero(mask_convex))
     pts_contour = np.transpose(np.nonzero(mask_contour))
+
     #cell_pts_contour = np.transpose(np.nonzero(cell_mask))
 
     # intensity_sum = 0
@@ -887,22 +970,12 @@ def get_stats(cp):
     cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(border_cells))
 
 
+    mcherry_line_intensity_sum = 0
 
+    for p in mcherry_line_pts:
+        mcherry_line_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
+    cp.set_mcherry_line_GFP_intensity(mcherry_line_intensity_sum)
 
-#TODO:  This was code from when we wanted to get the distance between the mCherry centers
-        # if M1['m00'] == 0 or M2['m00'] == 0:   # something has gone wrong
-        #     print ("The m00 moment = 0")
-        #     plt.imshow(edit_testimg,  cmap='gray')
-        #     plt.show()
-        #     return
-        #
-        # c1x = int(M1['m10'] / M1['m00'])
-        # c1y = int(M1['m01'] / M1['m00'])
-        # c2x = int(M2['m10'] / M2['m00'])
-        # c2y = int(M2['m01'] / M2['m00'])
-        # d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
-        # #print ('Distance: ' + str(d))
-        # cp.set_red_dot_distance(d)
 
 
 
@@ -1092,11 +1165,15 @@ def display_cell(image, id):
 
     #rad3 = Radiobutton(window, text='One Red Dot', value=1, variable=cp.red_dot_count)
     #rad4 = Radiobutton(window, text='Two Red Dot', value=2, variable=cp.red_dot_count)
-    #dist1 = Label(window)
-    #dist1.config(text="Distance: {:.3f}".format(cp.red_dot_distance))
+    dist_mcherry = Label(window)
+    dist_mcherry.config(text="Distance: {:.3f}".format(cp.red_dot_distance))
     #rad3.grid(row=6, column=3)
     #rad4.grid(row=7, column=3)
-    #dist1.grid(row=8, column=3)
+    dist_mcherry.grid(row=7, column=3)
+
+    intensity_mcherry_lbl = Label(window)
+    intensity_mcherry_lbl.config(text="Line GFP intensity: {}".format(cp.get_mcherry_line_GFP_intensity()))
+    intensity_mcherry_lbl.grid(row=8, column=3)
 
 
     #rad5 = Radiobutton(window, text='One Cyan Dot', value=1, variable=cp.cyan_dot_count)
@@ -1217,6 +1294,15 @@ kernel_size_lbl.grid(row=1, column=3)
 kernel_size_input = Entry(window)
 kernel_size_input.insert(END, '13')
 kernel_size_input.grid(row=1, column=4)
+
+
+mcherry_line_width_lbl = Label(window, text="mCherry Line Width")
+mcherry_line_width_lbl.grid(row=1, column=5)
+
+mcherry_line_width_input = Entry(window)
+mcherry_line_width_input.insert(END, '1')
+mcherry_line_width_input.grid(row=1, column=6)
+
 
 kernel_deviation_lbl = Label(window, text="Kernel Deviation")
 kernel_deviation_lbl.grid(row=2, column=3)
