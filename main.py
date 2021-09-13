@@ -218,7 +218,7 @@ def export_to_csv():
         outfile_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         #write headers
         # Image name, cell id, date, time, software version number, thresholding technique, contour technique, smoothing technique
-        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'mcherry line width', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'cytoplasmic intensity', 'nuc int/cyto int', 'mcherry line gfp intensity', 'user invalidated'])
+        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'mcherry line width', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'cytoplasmic intensity', 'nuc int/cyto int', 'mcherry distance', 'mcherry line gfp intensity', 'user invalidated'])
         for image, cells  in image_dict.items():
             for cell in cells:
                 cp = cp_dict.get((image, cell))
@@ -250,6 +250,7 @@ def export_to_csv():
                 line.append(cellular_intensity)   # cellular gfp
                 line.append(cytoplasmic_intensity)
                 line.append(nuc_div_cyto_intensity)
+                line.append(cp.red_dot_distance)
                 line.append(cp.get_mcherry_line_GFP_intensity())
                 line.append(cp.get_ignored())   # check if the user has invalidated this sample
                 outfile_writer.writerow(line)
@@ -692,7 +693,7 @@ def get_stats(cp):
     if ksize%2 == 0:
         ksize += 1
         print("You used an even ksize, updating to odd number +1")
-    gray_mcherry=cv2.GaussianBlur(orig_gray, (5,5), 3)
+    gray_mcherry=cv2.GaussianBlur(orig_gray, (3,3), 1)
     ret_mcherry, thresh_mcherry = cv2.threshold(gray_mcherry, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
     gray = cv2.GaussianBlur(orig_gray, (ksize,ksize), kdev)
     # plt.title("blur")
@@ -997,6 +998,7 @@ def display_cell(image, id):
     global current_cell
     global export_btn
     global drop_ignored_checkbox
+    global window
 
     export_btn['state'] = NORMAL
     drop_ignored_checkbox['state'] = NORMAL
@@ -1229,6 +1231,7 @@ def display_cell(image, id):
     image_prev_btn = Button(window, text="Previous Image", command=partial(display_cell, prev, 1))
     image_prev_btn.grid(row=4, column=0)
     cp_dict[(image, id)] = cp
+    window.update()
 
 window = Tk()
 
