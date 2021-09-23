@@ -49,7 +49,7 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             #rgbimage = skimage.filters.gaussian(rgbimage, sigma=(1,1))   # blur it first?
             imagename = imagename.split(".")[0]
 
-            if not os.path.exists(outputdirectory + imagename) or not use_cache.get():
+            if not os.path.exists(outputdirectory + imagename) or not use_cache:
                 os.makedirs(outputdirectory + imagename)
                 os.makedirs(outputdirectory + imagename + "/images/")
             rgbimage = Image.fromarray(rgbimage)

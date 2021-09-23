@@ -383,6 +383,8 @@ def segment_images():
             image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
+            debug_image = image
+
             # Convert the image to an RGB image, if necessary
             if len(image.shape) == 3 and image.shape[2] == 3:
                 pass
@@ -390,7 +392,7 @@ def segment_images():
                 image = np.expand_dims(image, axis=-1)
                 image = np.tile(image, 3)
 
-            # Open the segmentation file
+            # Open the segmentation file    # TODO -- make it show it is choosing the correc segmented
             seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/2021_0629_M2210_004_R3D_REF.tif
 
 
@@ -455,23 +457,140 @@ def segment_images():
 
                     #reset for the next cell
                     neighbor_count = dict()
+                #TODO:  Examine the spc110 dots and make closest dots neighbors
+                resolve_cells_using_spc110 = use_spc110.get()
+                lines_to_draw = dict()
+                if resolve_cells_using_spc110:
+
+                    # open the mcherry
+                    basename = image_name.split('_R3D_REF')[0]
+                    mcherry_dir = input_dir + basename + '_PRJ_TIFFS/'
+                    mcherry_image_name = basename + '_PRJ' + '_w625' + '.tif'
+                    mcherry_image = np.array(Image.open(mcherry_dir + mcherry_image_name))
+                    mcherry_image = skimage.exposure.rescale_intensity(mcherry_image.astype(np.float32), out_range=(0, 1))
+                    mcherry_image = np.round(mcherry_image * 255).astype(np.uint8)
+
+                    # Convert the image to an RGB image, if necessary
+                    if len(mcherry_image.shape) == 3 and mcherry_image.shape[2] == 3:
+                        pass
+                    else:
+                        mcherry_image = np.expand_dims(mcherry_image, axis=-1)
+                        mcherry_image = np.tile(mcherry_image, 3)
+                    # find contours
+                    mcherry_image_gray = cv2.cvtColor(mcherry_image, cv2.COLOR_RGB2GRAY)
+                    mcherry_image_gray, background = subtract_background_rolling_ball(mcherry_image_gray, 50,
+                                                                                       light_background=False,
+                                                                                       use_paraboloid=False,
+                                                                                       do_presmooth=True)
+
+                    plt.figure(dpi=600)
+                    plt.title("mcherry")
+                    plt.imshow(mcherry_image_gray, cmap='gray')
+                    plt.show()
+
+                    mcherry_image_gray = cv2.GaussianBlur(mcherry_image_gray, (1, 1), 0)
+                    mcherry_image_ret, mcherry_image_thresh = cv2.threshold(mcherry_image_gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
+                    mcherry_image_cont, mcherry_image_h = cv2.findContours(mcherry_image_thresh, 1, 2)
+
+                    cv2.drawContours(image, mcherry_image_cont, -1, 255, 1)
+                    plt.title("ref image with contours")
+                    plt.imshow(image, cmap='gray')
+                    plt.show()
+
+
+                    min_mcherry_distance = dict()
+                    min_mcherry_loc = dict()   # maps an mcherry dot to its closest mcherry dot in terms of cell id
+                    for cnt1 in mcherry_image_cont:
+                        try:
+                            contourArea = cv2.contourArea(cnt1)
+                            print (str(contourArea))
+                            if contourArea > 100000:   #test for the big box, TODO: fix this to be adaptive
+                                continue
+                            M1 = cv2.moments(cnt1)
+                            # These are opposite of what we would expect
+                            c1y = int(M1['m10'] / M1['m00'])
+                            c1x = int(M1['m01'] / M1['m00'])
+                        except:  #no moment found
+                            continue
+                        c_id = int(seg[c1x][c1y])
+                        if c_id == 0:
+                            continue
+                        for cnt2 in mcherry_image_cont:
+                            try:
+                                M2 = cv2.moments(cnt2)
+                                # find center of each contour
+                                c2y = int(M2['m10'] / M2['m00'])
+                                c2x = int(M2['m01'] / M2['m00'])
+                            except:
+                                continue #no moment found
+                            if int(seg[c2x][c2y]) == 0:
+                                continue
+                            if seg[c1x][c1y] == seg[c2x][c2y]:   #these are the same centroid.
+                                continue
+                            # find the closest point to each center
+                            d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
+                            if min_mcherry_distance.get(c_id) == None:
+                                min_mcherry_distance[c_id] = d
+                                min_mcherry_loc[c_id] = int(seg[c2x][c2y])
+                                lines_to_draw[c_id] = ((c1x,c1y), (c2x, c2y))
+                            else:
+                                if d < min_mcherry_distance[c_id]:
+                                    min_mcherry_distance[c_id] = d
+                                    min_mcherry_loc[c_id] = int(seg[c2x][c2y])
+                                    lines_to_draw[c_id] = ((c1y, c1x), (c2y, c2x))  #flip it back here
+                                elif d == min_mcherry_distance[c_id]:
+                                    print('This is unexpected, we had two mcherry red dots in cells {} and {} at the same distance from ('.format(seg[c1x][c1y], seg[c2x][c2y]) + str(min_mcherry_loc[c_id]) + ', ' + str((c2x, c2y)) + ') to ' + str((c1x, c1y)) + ' at a distance of ' + str(d))
+
+
+
+
+
+
 
                 for k, v in closest_neighbors.items():
-                    if v in closest_neighbors:
-                        if int(v) in ignore_list:
+                    if v in closest_neighbors:      # check to see if v could be a mutual pair
+                        if int(v) in ignore_list:    # if we have already paired this one, throw it out
                             single_cell_list.append(int(k))
                             continue
+
                         if closest_neighbors[int(v)] == int(k) and int(k) not in ignore_list:  # closest neighbors are reciprocal
                             #TODO:  set them to all be the same cell
                             to_update = np.where(seg == v)
                             ignore_list.append(int(v))
+                            if int(v) in min_mcherry_loc:    #if we merge them here, we don't need to do it with mcherry
+                                del min_mcherry_loc[int(v)]
+                            if int(k) in min_mcherry_loc:
+                                del min_mcherry_loc[int(k)]
                             for update in zip(to_update[0], to_update[1]):
                                 seg[update[0]][update[1]] = k
-                        elif int(k) not in ignore_list:
+
+                        elif int(k) not in ignore_list and not resolve_cells_using_spc110:
                             single_cell_list.append(int(k))
 
-                    else:
-                        print('cell already ignored')
+
+                    elif int(k) not in ignore_list and not resolve_cells_using_spc110:
+                        single_cell_list.append(int(k))
+
+                if resolve_cells_using_spc110:
+                    for c_id, nearest_cid in min_mcherry_loc.items():
+                        if int(c_id) in ignore_list:    # if we have already paired this one, ignore it
+                            continue
+                        if int(nearest_cid) in min_mcherry_loc:  #make sure teh reciprocal exists
+                            if min_mcherry_loc[int(nearest_cid)] == int(c_id) and int(c_id) not in ignore_list:   # if it is mutual
+                                print('added a cell pair in image {} using the mcherry technique {} and {}'.format(image_name, int(nearest_cid),
+                                                                                                       int(c_id)))
+                                if int(c_id) in single_cell_list:
+                                    single_cell_list.remove(int(c_id))
+                                if int(nearest_cid) in single_cell_list:
+                                    single_cell_list.remove(int(nearest_cid))
+                                to_update = np.where(seg == nearest_cid)
+                                closest_neighbors[int(c_id)] = int(nearest_cid)
+                                ignore_list.append(int(nearest_cid))
+                                for update in zip(to_update[0], to_update[1]):
+                                    seg[update[0]][update[1]] = c_id
+                            elif int(c_id) not in ignore_list:
+                                print('could not add cell pair because cell {} and cell {} were not mutually closest'.format(nearest_cid, int(v)))
+                                single_cell_list.append(int(k))
 
                 # remove single cells or confusing cells
                 for cell in single_cell_list:
@@ -542,6 +661,11 @@ def segment_images():
             # Overlay the outlines on the original image in green
             image_outlined = image.copy()
             image_outlined[outlines > 0] = (0, 255, 0)
+
+            # debugging to see where the mcherry signals connect
+            for k, v in lines_to_draw.items():
+                start, stop = v
+                cv2.line(image_outlined, start, stop, (255,0,0), 1)
 
             # Display the outline file
             fig = plt.figure(frameon=False)
@@ -615,7 +739,7 @@ def segment_images():
 
 
 
-                a = np.where(seg == i)
+                a = np.where(seg == i)   # somethin bad is happening when i = 4 on my tests
                 min_x = max(np.min(a[0]) - 1, 0)
                 max_x = min(np.max(a[0]) + 1, seg.shape[0])
                 min_y = max(np.min(a[1]) - 1, 0)
@@ -1009,6 +1133,9 @@ def display_cell(image, id):
     win_width = window.winfo_width()
     win_height = window.winfo_height()
     max_id = len(image_dict[image])
+    if max_id == 0:
+        print('No cells found in this image')
+        return
     if id < 1:
         id = max_id
     if id > max_id:
@@ -1025,7 +1152,7 @@ def display_cell(image, id):
     cell_size_y = int(0.23*main_size_x)
 
     im_cherry, im_gfp = get_stats(cp)
-    image_loc = output_dir + 'segmented/' + cp.get_DIC()
+    image_loc = output_dir + 'segmented/' + cp.get_DIC()  #TODO:  This messes up with the _w50 naming
     im = Image.open(image_loc)
     width, height = im.size
     if height > width:
@@ -1251,6 +1378,9 @@ drop_ignored.set(True)
 use_cache = BooleanVar()
 use_cache.set(True)
 
+use_spc110 = BooleanVar()
+use_spc110.set(True)
+
 choice_var = StringVar(window)
 choices = ['Metaphase Arrested', 'G1 Arrested']
 #choice_var.set(list(choices)[0])
@@ -1259,18 +1389,21 @@ choice_var.set(choices[0])
 use_cache_checkbox = Checkbutton(window, text='use cached masks', variable=use_cache)
 use_cache_checkbox.grid(row=0, column=1)
 
+use_mcherry_checkbox = Checkbutton(window, text='use mcherry to find pairs', variable=use_spc110)
+use_mcherry_checkbox.grid(row=0, column=2)
+
 analysis_type_menu = OptionMenu(window, choice_var, choice_var.get(), *choices)   # This seems different than the documentation
-analysis_type_menu.grid(row=0, column=2)
+analysis_type_menu.grid(row=0, column=3)
 
 
 
 export_btn = Button(window, text='Export to CSV', command=export_to_csv)
-export_btn.grid(row=0, column=3)
+export_btn.grid(row=0, column=4)
 export_btn['state'] = DISABLED
 
 
 drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
-drop_ignored_checkbox.grid(row=0, column=4)
+drop_ignored_checkbox.grid(row=0, column=5)
 drop_ignored_checkbox['state'] = DISABLED
 
 distvar = StringVar()
