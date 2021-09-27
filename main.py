@@ -493,23 +493,28 @@ def segment_images():
                     mcherry_image_cont, mcherry_image_h = cv2.findContours(mcherry_image_thresh, 1, 2)
 
                     cv2.drawContours(image, mcherry_image_cont, -1, 255, 1)
+                    plt.figure(dpi=600)
                     plt.title("ref image with contours")
                     plt.imshow(image, cmap='gray')
                     plt.show()
 
+
+                    #921,800
 
                     min_mcherry_distance = dict()
                     min_mcherry_loc = dict()   # maps an mcherry dot to its closest mcherry dot in terms of cell id
                     for cnt1 in mcherry_image_cont:
                         try:
                             contourArea = cv2.contourArea(cnt1)
-                            print (str(contourArea))
                             if contourArea > 100000:   #test for the big box, TODO: fix this to be adaptive
+                                print('threw out the bounding box for the entire image')
                                 continue
                             M1 = cv2.moments(cnt1)
                             # These are opposite of what we would expect
                             c1y = int(M1['m10'] / M1['m00'])
                             c1x = int(M1['m01'] / M1['m00'])
+
+
                         except:  #no moment found
                             continue
                         c_id = int(seg[c1x][c1y])
@@ -521,6 +526,9 @@ def segment_images():
                                 # find center of each contour
                                 c2y = int(M2['m10'] / M2['m00'])
                                 c2x = int(M2['m01'] / M2['m00'])
+
+                                
+
                             except:
                                 continue #no moment found
                             if int(seg[c2x][c2y]) == 0:
@@ -532,7 +540,7 @@ def segment_images():
                             if min_mcherry_distance.get(c_id) == None:
                                 min_mcherry_distance[c_id] = d
                                 min_mcherry_loc[c_id] = int(seg[c2x][c2y])
-                                lines_to_draw[c_id] = ((c1x,c1y), (c2x, c2y))
+                                lines_to_draw[c_id] = ((c1y,c1x), (c2y, c2x))
                             else:
                                 if d < min_mcherry_distance[c_id]:
                                     min_mcherry_distance[c_id] = d
@@ -662,17 +670,21 @@ def segment_images():
             image_outlined = image.copy()
             image_outlined[outlines > 0] = (0, 255, 0)
 
-            # debugging to see where the mcherry signals connect
-            for k, v in lines_to_draw.items():
-                start, stop = v
-                cv2.line(image_outlined, start, stop, (255,0,0), 1)
-
             # Display the outline file
             fig = plt.figure(frameon=False)
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
             fig.add_axes(ax)
             ax.imshow(image_outlined)
+
+            # debugging to see where the mcherry signals connect
+            for k, v in lines_to_draw.items():
+                start, stop = v
+                cv2.line(image_outlined, start, stop, (255,0,0), 1)
+                #txt = ax.text(start[0], start[1], str(start), size=12)
+                #txt.set_path_effects([PathEffects.withStroke(linewidth=1, foreground='w')])
+                #txt = ax.text(stop[0], stop[1], str(stop), size=12)
+                #txt.set_path_effects([PathEffects.withStroke(linewidth=1, foreground='w')])
 
 
             # iterate over each cell pair and add an ID to the image
