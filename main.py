@@ -568,10 +568,11 @@ def segment_images():
                             #TODO:  set them to all be the same cell
                             to_update = np.where(seg == v)
                             ignore_list.append(int(v))
-                            if int(v) in min_mcherry_loc:    #if we merge them here, we don't need to do it with mcherry
-                                del min_mcherry_loc[int(v)]
-                            if int(k) in min_mcherry_loc:
-                                del min_mcherry_loc[int(k)]
+                            if resolve_cells_using_spc110:
+                                if int(v) in min_mcherry_loc:    #if we merge them here, we don't need to do it with mcherry
+                                    del min_mcherry_loc[int(v)]
+                                if int(k) in min_mcherry_loc:
+                                    del min_mcherry_loc[int(k)]
                             for update in zip(to_update[0], to_update[1]):
                                 seg[update[0]][update[1]] = k
 
