@@ -483,20 +483,23 @@ def segment_images():
                                                                                        use_paraboloid=False,
                                                                                        do_presmooth=True)
 
-                    plt.figure(dpi=600)
-                    plt.title("mcherry")
-                    plt.imshow(mcherry_image_gray, cmap='gray')
-                    plt.show()
+                    debug = False
+                    if debug:
+                        plt.figure(dpi=600)
+                        plt.title("mcherry")
+                        plt.imshow(mcherry_image_gray, cmap='gray')
+                        plt.show()
 
-                    mcherry_image_gray = cv2.GaussianBlur(mcherry_image_gray, (1, 1), 0)
+                    #mcherry_image_gray = cv2.GaussianBlur(mcherry_image_gray, (1, 1), 0)
                     mcherry_image_ret, mcherry_image_thresh = cv2.threshold(mcherry_image_gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
                     mcherry_image_cont, mcherry_image_h = cv2.findContours(mcherry_image_thresh, 1, 2)
 
-                    cv2.drawContours(image, mcherry_image_cont, -1, 255, 1)
-                    plt.figure(dpi=600)
-                    plt.title("ref image with contours")
-                    plt.imshow(image, cmap='gray')
-                    plt.show()
+                    if debug:
+                        cv2.drawContours(image, mcherry_image_cont, -1, 255, 1)
+                        plt.figure(dpi=600)
+                        plt.title("ref image with contours")
+                        plt.imshow(image, cmap='gray')
+                        plt.show()
 
 
                     #921,800
@@ -533,7 +536,7 @@ def segment_images():
                                 continue #no moment found
                             if int(seg[c2x][c2y]) == 0:
                                 continue
-                            if seg[c1x][c1y] == seg[c2x][c2y]:   #these are the same centroid.
+                            if seg[c1x][c1y] == seg[c2x][c2y]:   #these are ihe same cell already -- Maybe this is ok?  TODO:  Figure out hwo to handle this because some of the mcherry signals are in the same cell
                                 continue
                             # find the closest point to each center
                             d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
