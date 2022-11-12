@@ -1,5 +1,7 @@
+# from curses import window
 import pytz
 from tkinter import *
+import customtkinter
 from tkinter import filedialog
 from tkinter.ttk import *
 from functools import partial
@@ -70,6 +72,122 @@ def set_output_directory():
         output_dir = old
         return
     output_lbl.config(text = output_dir)
+
+
+def start_analysis_main(configure):
+    global data
+    data = configure
+    global drop_ignored
+    global use_cache
+    global use_spc110
+    global window
+
+    # window = Tk()
+
+    # window.title("Yeast Analysis Tool")
+    # width = window.winfo_screenwidth()
+    # height = window.winfo_screenheight()
+    # #setting tkinter window size
+    # window.geometry("%dx%d" % (width, height))
+    # window.bind("<Configure>", on_resize)
+    # btn = Button(window, text="Start Analysis", command=segment_images)
+    # btn.grid(row=0, column=0)
+
+
+    drop_ignored = BooleanVar()
+    drop_ignored.set(True)
+
+    use_cache = BooleanVar()
+    use_cache.set(True)
+
+    use_spc110 = BooleanVar()
+    use_spc110.set(True)
+
+    # choice_var = StringVar(window)
+    # choices = ['Metaphase Arrested', 'G1 Arrested']
+    #choice_var.set(list(choices)[0])
+    # choice_var.set(choices[0])
+
+    # use_cache_checkbox = Checkbutton(window, text='use cached masks', variable=use_cache)
+    # use_cache_checkbox.grid(row=0, column=1)
+
+    if data['useChache'] == 'on':
+        use_cache.set(True)
+    else:
+        use_cache.set(False)
+
+    # use_mcherry_checkbox = Checkbutton(window, text='use mcherry to find pairs', variable=use_spc110)
+    # use_mcherry_checkbox.grid(row=0, column=2)
+    if data['mCherry_to_find_pairs'] == 'on':
+        use_spc110.set(True)
+    else:
+        use_spc110.set(False)
+
+    # analysis_type_menu = OptionMenu(window, choice_var, choice_var.get(), *choices)   # This seems different than the documentation
+    # analysis_type_menu.grid(row=0, column=3)
+
+    choice_var = data['arrested']
+
+
+
+    # export_btn = Button(window, text='Export to CSV', command=export_to_csv)
+    # export_btn.grid(row=0, column=4)
+    # export_btn['state'] = DISABLED
+
+
+    # drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
+    # drop_ignored_checkbox.grid(row=0, column=5)
+    # drop_ignored_checkbox['state'] = DISABLED
+
+    if data['drop_ignore'] == 'on':
+        drop_ignored = True
+    else:
+        drop_ignored = False
+
+    distvar = StringVar()
+
+
+    global kernel_size_input
+    # input_lbl = Label(window, text=input_dir)
+    # input_lbl.grid(row=1, column=1, padx=3)
+
+    # output_lbl = Label(window, text=output_dir)
+    # output_lbl.grid(row=2, column=1, padx=3)
+
+    # input_btn = Button(text="Set Input Directory", command=set_input_directory)
+    # input_btn.grid(row=1, column=0)
+
+    # output_btn = Button(text="Set Output Directory", command=set_output_directory)
+    # output_btn.grid(row=2, column=0)
+
+    # ignore_btn = Button(window, text="IGNORE")
+    #ignore_btn.grid(row=6, column=7, rowspan=2)
+
+    # kernel_size_lbl = Label(window, text="Kernel Size")
+    # kernel_size_lbl.grid(row=1, column=3)
+
+    # kernel_size_input = Entry(window)
+    # kernel_size_input.insert(END, '13')
+    # kernel_size_input.grid(row=1, column=4)
+
+    kernel_size_input = data['kernel_diviation']
+
+    # mcherry_line_width_lbl = Label(window, text="mCherry Line Width")
+    # mcherry_line_width_lbl.grid(row=1, column=5)
+
+    # mcherry_line_width_input = Entry(window)
+    # mcherry_line_width_input.insert(END, '1')
+    # mcherry_line_width_input.grid(row=1, column=6)
+    global mcherry_line_width_input
+
+    mcherry_line_width_input = data['mCherry_line_width']
+
+    # kernel_deviation_input = Entry(window)
+    # kernel_deviation_input.insert(END, '5')
+    # kernel_deviation_input.grid(row=2, column=4)
+    global kernel_deviation_input
+    kernel_deviation_input = data['kernel_diviation']
+    segment_images()
 
 class CellPair:
     def __init__(self, image_name, id):
@@ -241,9 +359,9 @@ def export_to_csv():
                 line.append(image)
                 line.append(cell)
                 line.append(now)
-                line.append(kernel_size_input.get())
-                line.append(kernel_deviation_input.get())
-                line.append(mcherry_line_width_input.get())
+                line.append(kernel_size_input)
+                line.append(kernel_deviation_input)
+                line.append(mcherry_line_width_input)
                 line.append('contour')  # we might make this variable in the future
                 line.append('cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU') # we might make this variable in the future
                 line.append(nucleus_intensity)   # nuclear gfp
@@ -265,8 +383,8 @@ def segment_images():
     global image_dict
     #TODO:  ask user if they want to refresh segmentation
     global window
-    global output_dir
-    global input_dir
+    global output_dir 
+    global input_dir 
     global img_label
     global DIC_label
     global DAPI_label
@@ -276,7 +394,12 @@ def segment_images():
     global ID_label
     global outline_dict
 
-
+    print("kernel size", int(kernel_size_input))
+    print("kernel diviation",int(kernel_deviation_input))
+    print("mcher",int(mcherry_line_width_input))
+    print('usechace',use_cache.get())
+    print('use_spc110', use_spc110.get())
+    print('arrested', choice_var)
 
 
     if input_dir[-1] != "/":
@@ -706,7 +829,7 @@ def segment_images():
 
         #TODO:  Combine the two iterations over the input directory images
 
-# This is where we overlay what we learned in the DIC onto the other images
+        # This is where we overlay what we learned in the DIC onto the other images
 
         filter_dir = input_dir  + base_image_name + '_PRJ_TIFFS/'
 
@@ -827,8 +950,8 @@ def get_stats(cp):
     orig_gray_GFP_no_bg, background = subtract_background_rolling_ball(orig_gray_GFP, 50, light_background=False,
                                                        use_paraboloid=False, do_presmooth=True)
     orig_gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
-    kdev = int(kernel_deviation_input.get())
-    ksize = int(kernel_size_input.get())
+    kdev = int(kernel_deviation_input)
+    ksize = int(kernel_size_input)
     #ksize must be odd
     if ksize%2 == 0:
         ksize += 1
@@ -972,9 +1095,9 @@ def get_stats(cp):
             d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
             #print ('Distance: ' + str(d))
             cp.set_red_dot_distance(d)
-            cv2.line(edit_testimg, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input.get()))
+            cv2.line(edit_testimg, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input))
             mcherry_line_mask = np.zeros(gray.shape, np.uint8)
-            cv2.line(mcherry_line_mask, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input.get()))
+            cv2.line(mcherry_line_mask, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input))
             mcherry_line_pts = np.transpose(np.nonzero(mcherry_line_mask))
 
     if len(bestContours) == 2:  # "There can be only one!" - Connor MacLeod
@@ -1376,127 +1499,178 @@ def display_cell(image, id):
     cp_dict[(image, id)] = cp
     window.update()
 
-window = Tk()
+global data
+def tink(conf,window1):
+    data = conf
+    print(data)
+    global window
+    window = window1
 
-window.title("Yeast Analysis Tool")
-width = window.winfo_screenwidth()
-height = window.winfo_screenheight()
-#setting tkinter window size
-window.geometry("%dx%d" % (width, height))
-window.bind("<Configure>", on_resize)
-btn = Button(window, text="Start Analysis", command=segment_images)
-btn.grid(row=0, column=0)
+    window.title("Yeast Analysis Tool")
+    width = window.winfo_screenwidth()
+    height = window.winfo_screenheight()
+    #setting tkinter window size
+    window.geometry("%dx%d" % (width, height))
+    window.bind("<Configure>", on_resize)
 
+    global drop_ignored
+    drop_ignored = BooleanVar()
+    drop_ignored.set(True)
 
-drop_ignored = BooleanVar()
-drop_ignored.set(True)
+    global use_cache
+    use_cache = BooleanVar()
+    use_cache.set(True)
+    if data['useChache'] == 'on':
+        use_cache.set(True)
+    else:
+        use_cache.set(False)
 
-use_cache = BooleanVar()
-use_cache.set(True)
+    global use_spc110
+    use_spc110 = BooleanVar()
+    use_spc110.set(True)
 
-use_spc110 = BooleanVar()
-use_spc110.set(True)
+    if data['mCherry_to_find_pairs'] == 'on':
+        use_spc110.set(True)
+    else:
+        use_spc110.set(False)
 
-choice_var = StringVar(window)
-choices = ['Metaphase Arrested', 'G1 Arrested']
-#choice_var.set(list(choices)[0])
-choice_var.set(choices[0])
-
-use_cache_checkbox = Checkbutton(window, text='use cached masks', variable=use_cache)
-use_cache_checkbox.grid(row=0, column=1)
-
-use_mcherry_checkbox = Checkbutton(window, text='use mcherry to find pairs', variable=use_spc110)
-use_mcherry_checkbox.grid(row=0, column=2)
-
-analysis_type_menu = OptionMenu(window, choice_var, choice_var.get(), *choices)   # This seems different than the documentation
-analysis_type_menu.grid(row=0, column=3)
-
-
-
-export_btn = Button(window, text='Export to CSV', command=export_to_csv)
-export_btn.grid(row=0, column=4)
-export_btn['state'] = DISABLED
+    global choice_var
+    choice_var = data['arrested']
 
 
-drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
-drop_ignored_checkbox.grid(row=0, column=5)
-drop_ignored_checkbox['state'] = DISABLED
+    # choice_var = StringVar(window)
+    # choices = ['Metaphase Arrested', 'G1 Arrested']
+    # #choice_var.set(list(choices)[0])
+    # choice_var.set(choices[0])
 
-distvar = StringVar()
+    # use_cache_checkbox = Checkbutton(window, text='use cached masks', variable=use_cache)
+    # use_cache_checkbox.grid(row=0, column=1)
 
+    # use_mcherry_checkbox = Checkbutton(window, text='use mcherry to find pairs', variable=use_spc110)
+    # use_mcherry_checkbox.grid(row=0, column=2)
 
-input_lbl = Label(window, text=input_dir)
-input_lbl.grid(row=1, column=1, padx=3)
-
-output_lbl = Label(window, text=output_dir)
-output_lbl.grid(row=2, column=1, padx=3)
-
-input_btn = Button(text="Set Input Directory", command=set_input_directory)
-input_btn.grid(row=1, column=0)
-
-output_btn = Button(text="Set Output Directory", command=set_output_directory)
-output_btn.grid(row=2, column=0)
-
-ignore_btn = Button(window, text="IGNORE")
-#ignore_btn.grid(row=6, column=7, rowspan=2)
-
-kernel_size_lbl = Label(window, text="Kernel Size")
-kernel_size_lbl.grid(row=1, column=3)
-
-kernel_size_input = Entry(window)
-kernel_size_input.insert(END, '13')
-kernel_size_input.grid(row=1, column=4)
+    # analysis_type_menu = OptionMenu(window, choice_var, choice_var.get(), *choices)   # This seems different than the documentation
+    # analysis_type_menu.grid(row=0, column=3)
 
 
-mcherry_line_width_lbl = Label(window, text="mCherry Line Width")
-mcherry_line_width_lbl.grid(row=1, column=5)
+    global export_btn
+    export_btn = Button(window, text='Export to CSV', command=export_to_csv)
+    export_btn.grid(row=0, column=4)
+    export_btn['state'] = DISABLED
 
-mcherry_line_width_input = Entry(window)
-mcherry_line_width_input.insert(END, '1')
-mcherry_line_width_input.grid(row=1, column=6)
+    global drop_ignored_checkbox
+    drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
+    drop_ignored_checkbox.grid(row=0, column=5)
+    drop_ignored_checkbox['state'] = DISABLED
+
+    distvar = StringVar()
+
+    # global input_lbl
+    # input_lbl = Label(window, text=input_dir)
+    # input_lbl.grid(row=1, column=1, padx=3)
+
+    # global output_lbl
+    # output_lbl = Label(window, text=output_dir)
+    # output_lbl.grid(row=2, column=1, padx=3)
+
+    global input_dir 
+    input_dir= data['input_dir']
+    global output_dir 
+    output_dir = data['output_dir']
+
+    # input_btn = Button(text="Set Input Directory", command=set_input_directory)
+    # input_btn.grid(row=1, column=0)
+
+    # output_btn = Button(text="Set Output Directory", command=set_output_directory)
+    # output_btn.grid(row=2, column=0)
+
+    ignore_btn = Button(window, text="IGNORE")
+    ignore_btn.grid(row=6, column=7, rowspan=2)
+
+    # kernel_size_lbl = Label(window, text="Kernel Size")
+    # kernel_size_lbl.grid(row=1, column=3)
+
+    global kernel_size_input
+    kernel_size_input = data['kernel_size']
+    # kernel_size_input = Entry(window)
+    # kernel_size_input.insert(END, '13')
+    # kernel_size_input.grid(row=1, column=4)
 
 
-kernel_deviation_lbl = Label(window, text="Kernel Deviation")
-kernel_deviation_lbl.grid(row=2, column=3)
+    # mcherry_line_width_lbl = Label(window, text="mCherry Line Width")
+    # mcherry_line_width_lbl.grid(row=1, column=5)
+
+    global mcherry_line_width_input
+    mcherry_line_width_input = data['mCherry_line_width']
+    # mcherry_line_width_input = Entry(window)
+    # mcherry_line_width_input.insert(END, '1')
+    # mcherry_line_width_input.grid(row=1, column=6)
 
 
-kernel_deviation_input = Entry(window)
-kernel_deviation_input.insert(END, '5')
-kernel_deviation_input.grid(row=2, column=4)
+    # kernel_deviation_lbl = Label(window, text="Kernel Deviation")
+    # kernel_deviation_lbl.grid(row=2, column=3)
 
-img_title_label = Label(window)
-img_title_label.grid(row=3, column=3)
+    global kernel_deviation_input
+    kernel_deviation_input = data['kernel_diviation']
+    # kernel_deviation_input = Entry(window)
+    # kernel_deviation_input.insert(END, '5')
+    # kernel_deviation_input.grid(row=2, column=4)
+    # btn = Button(window, text="Start Analysis", command=segment_images)
+    # btn.grid(row=0, column=0)
+    global img_title_label
+    img_title_label = Label(window)
+    img_title_label.grid(row=3, column=3)
 
-img_label = Label(window)
-img_label.grid(row=4, column=1, columnspan=5)
+    global img_label
+    img_label = Label(window)
+    img_label.grid(row=4, column=1, columnspan=5)
 
-ID_label = Label(window)
-ID_label.grid(row=6, column=0)
+    global ID_label
+    ID_label = Label(window)
+    ID_label.grid(row=6, column=0)
 
-DIC_label_text = Label(window, font=("Times New Roman", 18, "bold"))
-DIC_label_text.grid(row=5, column=1)
+    global DIC_label_text
+    DIC_label_text = Label(window, font=("Times New Roman", 18, "bold"))
+    DIC_label_text.grid(row=5, column=1)
 
-DAPI_label_text = Label(window, foreground='blue', font=("Times New Roman", 18, "bold"))
-DAPI_label_text.grid(row=5, column=2)
+    global DAPI_label_text
+    DAPI_label_text = Label(window, foreground='blue', font=("Times New Roman", 18, "bold"))
+    DAPI_label_text.grid(row=5, column=2)
 
-mCherry_label_text = Label(window, foreground='red', font=("Times New Roman", 18, "bold"))
-mCherry_label_text.grid(row=5, column=3)
+    global mCherry_label_text
+    mCherry_label_text = Label(window, foreground='red', font=("Times New Roman", 18, "bold"))
+    mCherry_label_text.grid(row=5, column=3)
 
-GFP_label_text = Label(window, foreground='green', font=("Times New Roman", 18, "bold"))
-GFP_label_text.grid(row=5, column=4)
+    global GFP_label_text
+    GFP_label_text = Label(window, foreground='green', font=("Times New Roman", 18, "bold"))
+    GFP_label_text.grid(row=5, column=4)
 
+    global DIC_label
+    DIC_label = Label(window)
+    DIC_label.grid(row=6, column=1)
 
-DIC_label = Label(window)
-DIC_label.grid(row=6, column=1)
+    global DAPI_label
+    DAPI_label = Label(window)
+    DAPI_label.grid(row=6, column=2)
 
-DAPI_label = Label(window)
-DAPI_label.grid(row=6, column=2)
+    global mCherry_label
+    mCherry_label = Label(window)
+    mCherry_label.grid(row=6, column=3) 
 
-mCherry_label = Label(window)
-mCherry_label.grid(row=6, column=3)
+    global GFP_label
+    GFP_label = Label(window)
+    GFP_label.grid(row=6, column=4)
+    img_label.bind("<Button-1>", callback)
+    window.bind("<Left>", key)
+    window.bind("<Right>", key)
+    window.bind("<Up>", key)
+    window.bind("<Down>", key)
+    for i in range(10):
+        window.bind(str(i), key)
 
-GFP_label = Label(window)
-GFP_label.grid(row=6, column=4)
+    #canvas = Canvas(window, width = 1000, height = 1000)
+    segment_images()
+    window.mainloop()
 
 #CFP_label = Label(window)
 #CFP_label.grid(row=6, column=5)
@@ -1555,17 +1729,3 @@ def key(event):
     if event.keysym == 'Down':
         display_cell(next, 0)
 
-img_label.bind("<Button-1>", callback)
-window.bind("<Left>", key)
-window.bind("<Right>", key)
-window.bind("<Up>", key)
-window.bind("<Down>", key)
-for i in range(10):
-    window.bind(str(i), key)
-
-#canvas = Canvas(window, width = 1000, height = 1000)
-
-
-
-
-window.mainloop()
