@@ -1,0 +1,8 @@
+inputs/
+outputs/
+weights/*.h5
+default_config.json
+pre_config.json
+mrcnn/__pycache__/
+__pycache__/
+.DS_Store
