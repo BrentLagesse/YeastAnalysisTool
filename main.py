@@ -522,7 +522,7 @@ def segment_images():
             #TODO:   If G1 Arrested, we don't want to merge neighbors and ignore non-budding cells
             #choices = ['Metaphase Arrested', 'G1 Arrested']
             outlines = np.zeros(seg.shape)
-            if choice_var.get() == 'Metaphase Arrested':
+            if choice_var == 'Metaphase Arrested':
                 # Create a raw file to store the outlines
 
                 ignore_list = list()
