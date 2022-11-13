@@ -10,6 +10,7 @@ from tkinter.ttk import *
 import opts as opt
 import json
 import main
+import os
 
 input_dir = opt.input_directory
 output_dir = opt.output_directory
@@ -87,7 +88,6 @@ def get_data():
 
 
 def set_ok():
-    print(data)
     start_btn.configure(state="normal")
     set_data()
     with open('pre_config.json', 'w') as fp:
@@ -108,7 +108,13 @@ window.bind("<Configure>", on_resize)
 
 
 def start_analysis():
-    # print(data)
+    global output_dir
+    if not os.path.isdir(data['output_dir'] + "/segmented/"):
+        print("test123" + data['output_dir'] + "/segmented/")
+        os.makedirs(data['output_dir'] + "/segmented/")
+    if not os.path.isdir(data['output_dir'] + "/masks/"):
+        print("test123" + data['output_dir'] + "/masks/")
+        os.makedirs(data['output_dir'] + "/masks/")
     main.tink(data, window)
 
 
@@ -124,14 +130,12 @@ def my_configure():
     global data
     data = json.load(configure_file)
     get_data()
-    print(data)
 
 
 def pre_conf():
     configure_file = open("./pre_config.json")
     global data
     data = json.load(configure_file)
-    print("pre data", data)
     get_data()
 
 
