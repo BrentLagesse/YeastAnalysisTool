@@ -193,6 +193,7 @@ class CellPair:
     def __init__(self, image_name, id):
         self.is_correct = True
         self.image_name = image_name
+        print("Image name", image_name)
         self.id = id
         self.nuclei_count = 1
         self.red_dot_count = 1
@@ -211,6 +212,7 @@ class CellPair:
         self.red_dot_distance = d
 
     def get_base_name(self):
+        print("imagetest:",self.image_name)
         return self.image_name.split('_R3D_REF')[0]
 
     def get_DIC(self, use_id=False, outline=True):
@@ -393,6 +395,11 @@ def segment_images():
 #    global CFP_label
     global ID_label
     global outline_dict
+    global cp_dict
+
+    cp_dict.clear()
+    image_dict.clear()
+    print("cp_dict", cp_dict)
 
     print("kernel size", int(kernel_size_input))
     print("kernel diviation",int(kernel_deviation_input))
@@ -910,9 +917,10 @@ def segment_images():
                     plt.clf()
 
     # if the image_dict is empty, then we didn't get anything interesting from the directory
-
+    print("image_dict123", image_dict)
     if len(image_dict) > 0:
         k, v = list(image_dict.items())[0]
+        print("displaycell",k,v[0])
         display_cell(k, v[0])
     #else: show error message
 
@@ -936,6 +944,7 @@ def get_stats(cp):
 
     global mcherry_line_width_input
     #outlines screw up the analysis
+    print("test123", 'segmented/' + cp.get_mCherry(use_id=True, outline=False))
     im = Image.open(output_dir + 'segmented/' + cp.get_mCherry(use_id=True, outline=False))
     im_GFP = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True, outline=False))
     im_GFP_for_cellular_intensity = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True))  #has outline
@@ -1281,7 +1290,9 @@ def display_cell(image, id):
         id = 1
     ID_label.configure(text='Cell ID:  ' + str(id))
     img_title_label.configure(text=image)
+    print("displayImagename", image, cp_dict)
     cp = cp_dict.get((image, id))
+    print("cp123", cp)
     if cp == None:
         cp = CellPair(image, id)
         cp_dict[(image, id)] = cp
@@ -1433,13 +1444,13 @@ def display_cell(image, id):
 
     #rad3 = Radiobutton(window, text='One Red Dot', value=1, variable=cp.red_dot_count)
     #rad4 = Radiobutton(window, text='Two Red Dot', value=2, variable=cp.red_dot_count)
-    dist_mcherry = Label(window)
+    dist_mcherry = customtkinter.CTkLabel(window)
     dist_mcherry.config(text="Distance: {:.3f}".format(cp.red_dot_distance))
     #rad3.grid(row=6, column=3)
     #rad4.grid(row=7, column=3)
     dist_mcherry.grid(row=7, column=3)
 
-    intensity_mcherry_lbl = Label(window)
+    intensity_mcherry_lbl = customtkinter.CTkLabel(window)
     intensity_mcherry_lbl.config(text="Line GFP intensity: {}".format(cp.get_mcherry_line_GFP_intensity()))
     intensity_mcherry_lbl.grid(row=8, column=3)
 
@@ -1452,9 +1463,9 @@ def display_cell(image, id):
     #rad7 = Radiobutton(window, text='One Green Dot', value=1, variable=cp.green_dot_count)
     #rad8 = Radiobutton(window, text='Two Green Dot', value=2, variable=cp.green_dot_count)
     try:
-        intense1 = Label(window)
+        intense1 = customtkinter.CTkLabel(window)
         intense1.config(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
-        intense2 = Label(window)
+        intense2 = customtkinter.CTkLabel(window)
         intense2.config(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
         intense1.grid(row=7, column=4)
         intense2.grid(row=8, column=4)
@@ -1466,13 +1477,13 @@ def display_cell(image, id):
     ignore_txt = 'IGNORE'
     if cp_dict[(image,id)].ignored:
         ignore_txt = 'ENABLE'
-    ignore_btn = Button(window, text=ignore_txt, command=partial(ignore, image, id))
+    ignore_btn = customtkinter.CTkButton(window, text=ignore_txt, command=partial(ignore, image, id))
     ignore_btn.grid(row=7, column=7, rowspan=2)
 
 
-    next_btn = Button(window, text="Next Pair", command=partial(display_cell, image, id+1))
+    next_btn = customtkinter.CTkButton(window, text="Next Pair", command=partial(display_cell, image, id+1))
     next_btn.grid(row=10, column=4)
-    prev_btn = Button(window, text="Previous Pair", command=partial(display_cell, image, id-1))
+    prev_btn = customtkinter.CTkButton(window, text="Previous Pair", command=partial(display_cell, image, id-1))
     prev_btn.grid(row=10, column=2)
 
     #TODO:  Do this in a less stupid way.
@@ -1492,9 +1503,9 @@ def display_cell(image, id):
     if prev is None:
         prev = list(image_dict.keys())[len(image_dict)-1]
 
-    image_next_btn = Button(window, text="Next Image", command=partial(display_cell, next, 1))
+    image_next_btn = customtkinter.CTkButton(window, text="Next Image", command=partial(display_cell, next, 1))
     image_next_btn.grid(row=4, column=6)
-    image_prev_btn = Button(window, text="Previous Image", command=partial(display_cell, prev, 1))
+    image_prev_btn = customtkinter.CTkButton(window, text="Previous Image", command=partial(display_cell, prev, 1))
     image_prev_btn.grid(row=4, column=0)
     cp_dict[(image, id)] = cp
     window.update()
@@ -1554,12 +1565,12 @@ def tink(conf,window1):
 
 
     global export_btn
-    export_btn = Button(window, text='Export to CSV', command=export_to_csv)
+    export_btn = customtkinter.CTkButton(window, text='Export to CSV', command=export_to_csv)
     export_btn.grid(row=0, column=4)
     export_btn['state'] = DISABLED
 
     global drop_ignored_checkbox
-    drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
+    drop_ignored_checkbox = customtkinter.CTkCheckBox(window, text='drop ignored', variable=drop_ignored)
     drop_ignored_checkbox.grid(row=0, column=5)
     drop_ignored_checkbox['state'] = DISABLED
 
@@ -1584,7 +1595,7 @@ def tink(conf,window1):
     # output_btn = Button(text="Set Output Directory", command=set_output_directory)
     # output_btn.grid(row=2, column=0)
 
-    ignore_btn = Button(window, text="IGNORE")
+    ignore_btn = customtkinter.CTkButton(window, text="IGNORE")
     ignore_btn.grid(row=6, column=7, rowspan=2)
 
     # kernel_size_lbl = Label(window, text="Kernel Size")
@@ -1618,47 +1629,47 @@ def tink(conf,window1):
     # btn = Button(window, text="Start Analysis", command=segment_images)
     # btn.grid(row=0, column=0)
     global img_title_label
-    img_title_label = Label(window)
+    img_title_label = customtkinter.CTkLabel(window)
     img_title_label.grid(row=3, column=3)
 
     global img_label
-    img_label = Label(window)
+    img_label = customtkinter.CTkLabel(window)
     img_label.grid(row=4, column=1, columnspan=5)
 
     global ID_label
-    ID_label = Label(window)
+    ID_label = customtkinter.CTkLabel(window)
     ID_label.grid(row=6, column=0)
 
     global DIC_label_text
-    DIC_label_text = Label(window, font=("Times New Roman", 18, "bold"))
+    DIC_label_text = customtkinter.CTkLabel(window, text_font=("Times New Roman", 18, "bold"))
     DIC_label_text.grid(row=5, column=1)
 
     global DAPI_label_text
-    DAPI_label_text = Label(window, foreground='blue', font=("Times New Roman", 18, "bold"))
+    DAPI_label_text = customtkinter.CTkLabel(window, foreground='blue', text_font=("Times New Roman", 18, "bold"))
     DAPI_label_text.grid(row=5, column=2)
 
     global mCherry_label_text
-    mCherry_label_text = Label(window, foreground='red', font=("Times New Roman", 18, "bold"))
+    mCherry_label_text = customtkinter.CTkLabel(window, foreground='red', text_font=("Times New Roman", 18, "bold"))
     mCherry_label_text.grid(row=5, column=3)
 
     global GFP_label_text
-    GFP_label_text = Label(window, foreground='green', font=("Times New Roman", 18, "bold"))
+    GFP_label_text = customtkinter.CTkLabel(window, foreground='green', text_font=("Times New Roman", 18, "bold"))
     GFP_label_text.grid(row=5, column=4)
 
     global DIC_label
-    DIC_label = Label(window)
+    DIC_label = customtkinter.CTkLabel(window)
     DIC_label.grid(row=6, column=1)
 
     global DAPI_label
-    DAPI_label = Label(window)
+    DAPI_label = customtkinter.CTkLabel(window)
     DAPI_label.grid(row=6, column=2)
 
     global mCherry_label
-    mCherry_label = Label(window)
+    mCherry_label = customtkinter.CTkLabel(window)
     mCherry_label.grid(row=6, column=3) 
 
     global GFP_label
-    GFP_label = Label(window)
+    GFP_label = customtkinter.CTkLabel(window)
     GFP_label.grid(row=6, column=4)
     img_label.bind("<Button-1>", callback)
     window.bind("<Left>", key)
