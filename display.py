@@ -1,6 +1,7 @@
 from cgitb import enable, text
 from distutils.cmd import Command
 from multiprocessing.sharedctypes import Value
+import shutil
 import tkinter
 import customtkinter
 from tkinter import *
@@ -90,8 +91,8 @@ def get_data():
 def set_ok():
     start_btn.configure(state="normal")
     set_data()
-    with open('pre_config.json', 'w') as fp:
-        json.dump(data, fp)
+    # with open('pre_config.json', 'w') as fp:
+    #     json.dump(data, fp)
     configure_window.destroy()
 
 
@@ -108,13 +109,24 @@ window.bind("<Configure>", on_resize)
 
 
 def start_analysis():
-    global output_dir
+    if os.path.exists("./pre_config.json"):
+        preconf = open("./pre_config.json")
+        preconf_data = json.load(preconf)
+        print(preconf_data['input_dir'], data['input_dir'])
+        if preconf_data['input_dir'] != data['input_dir']:
+            path = data['output_dir'] + '/*'
+            print(path)
+            if os.path.exists(data['output_dir'] + '/segmented'):
+                shutil.rmtree(data['output_dir'] + '/segmented')
+            if os.path.exists(data['output_dir'] + '/masks'):
+                shutil.rmtree(data['output_dir'] + '/masks')
+
     if not os.path.isdir(data['output_dir'] + "/segmented/"):
-        print("test123" + data['output_dir'] + "/segmented/")
         os.makedirs(data['output_dir'] + "/segmented/")
     if not os.path.isdir(data['output_dir'] + "/masks/"):
-        print("test123" + data['output_dir'] + "/masks/")
         os.makedirs(data['output_dir'] + "/masks/")
+    with open('pre_config.json', 'w') as fp:
+        json.dump(data, fp)
     main.tink(data, window)
 
 
