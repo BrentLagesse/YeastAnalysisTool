@@ -27,6 +27,8 @@ from mrcnn.preprocess_images import preprocess_images
 from mrcnn.convert_to_image import convert_to_image, convert_to_imagej
 from enum import Enum
 from cv2_rolling_ball import subtract_background_rolling_ball
+import stats
+from export import export_to_csv_file
 
 input_dir = opt.input_directory
 output_dir = opt.output_directory
@@ -49,145 +51,6 @@ class Contour(Enum):
     CONVEX = 1
     CIRCLE = 2
 
-def set_input_directory():
-    global input_dir
-    old = input_dir
-    global input_lbl
-    input_dir = filedialog.askdirectory(parent=window, title='Choose the Directory with the input Images',
-                                        initialdir=input_dir)
-    #TODO: This updates the variable, but I need to make it update the string on the screen
-    if input_dir == "":
-        input_dir = old
-        return
-    input_lbl.config(text = input_dir)
-    #print (input_dir)
-
-def set_output_directory():
-    global output_dir
-    old = output_dir
-    global output_lbl
-    output_dir = filedialog.askdirectory(parent=window, title='Choose the Directory to output Segmented Images',
-                                         initialdir=output_dir)
-    if output_dir == "":
-        output_dir = old
-        return
-    output_lbl.config(text = output_dir)
-
-
-def start_analysis_main(configure):
-    global data
-    data = configure
-    global drop_ignored
-    global use_cache
-    global use_spc110
-    global window
-
-    # window = Tk()
-
-    # window.title("Yeast Analysis Tool")
-    # width = window.winfo_screenwidth()
-    # height = window.winfo_screenheight()
-    # #setting tkinter window size
-    # window.geometry("%dx%d" % (width, height))
-    # window.bind("<Configure>", on_resize)
-    # btn = Button(window, text="Start Analysis", command=segment_images)
-    # btn.grid(row=0, column=0)
-
-
-    drop_ignored = BooleanVar()
-    drop_ignored.set(True)
-
-    use_cache = BooleanVar()
-    use_cache.set(True)
-
-    use_spc110 = BooleanVar()
-    use_spc110.set(True)
-
-    # choice_var = StringVar(window)
-    # choices = ['Metaphase Arrested', 'G1 Arrested']
-    #choice_var.set(list(choices)[0])
-    # choice_var.set(choices[0])
-
-    # use_cache_checkbox = Checkbutton(window, text='use cached masks', variable=use_cache)
-    # use_cache_checkbox.grid(row=0, column=1)
-
-    if data['useChache'] == 'on':
-        use_cache.set(True)
-    else:
-        use_cache.set(False)
-
-    # use_mcherry_checkbox = Checkbutton(window, text='use mcherry to find pairs', variable=use_spc110)
-    # use_mcherry_checkbox.grid(row=0, column=2)
-    if data['mCherry_to_find_pairs'] == 'on':
-        use_spc110.set(True)
-    else:
-        use_spc110.set(False)
-
-    # analysis_type_menu = OptionMenu(window, choice_var, choice_var.get(), *choices)   # This seems different than the documentation
-    # analysis_type_menu.grid(row=0, column=3)
-
-    choice_var = data['arrested']
-
-
-
-    # export_btn = Button(window, text='Export to CSV', command=export_to_csv)
-    # export_btn.grid(row=0, column=4)
-    # export_btn['state'] = DISABLED
-
-
-    # drop_ignored_checkbox = Checkbutton(window, text='drop ignored', variable=drop_ignored)
-    # drop_ignored_checkbox.grid(row=0, column=5)
-    # drop_ignored_checkbox['state'] = DISABLED
-
-    if data['drop_ignore'] == 'on':
-        drop_ignored = True
-    else:
-        drop_ignored = False
-
-    distvar = StringVar()
-
-
-    global kernel_size_input
-    # input_lbl = Label(window, text=input_dir)
-    # input_lbl.grid(row=1, column=1, padx=3)
-
-    # output_lbl = Label(window, text=output_dir)
-    # output_lbl.grid(row=2, column=1, padx=3)
-
-    # input_btn = Button(text="Set Input Directory", command=set_input_directory)
-    # input_btn.grid(row=1, column=0)
-
-    # output_btn = Button(text="Set Output Directory", command=set_output_directory)
-    # output_btn.grid(row=2, column=0)
-
-    # ignore_btn = Button(window, text="IGNORE")
-    #ignore_btn.grid(row=6, column=7, rowspan=2)
-
-    # kernel_size_lbl = Label(window, text="Kernel Size")
-    # kernel_size_lbl.grid(row=1, column=3)
-
-    # kernel_size_input = Entry(window)
-    # kernel_size_input.insert(END, '13')
-    # kernel_size_input.grid(row=1, column=4)
-
-    kernel_size_input = data['kernel_diviation']
-
-    # mcherry_line_width_lbl = Label(window, text="mCherry Line Width")
-    # mcherry_line_width_lbl.grid(row=1, column=5)
-
-    # mcherry_line_width_input = Entry(window)
-    # mcherry_line_width_input.insert(END, '1')
-    # mcherry_line_width_input.grid(row=1, column=6)
-    global mcherry_line_width_input
-
-    mcherry_line_width_input = data['mCherry_line_width']
-
-    # kernel_deviation_input = Entry(window)
-    # kernel_deviation_input.insert(END, '5')
-    # kernel_deviation_input.grid(row=2, column=4)
-    global kernel_deviation_input
-    kernel_deviation_input = data['kernel_diviation']
-    segment_images()
 
 class CellPair:
     def __init__(self, image_name, id):
@@ -328,52 +191,7 @@ def export_to_csv():
     global image_dict
     global cp_dict
     global drop_ignored
-
-
-    from datetime import datetime
-    now = datetime.utcnow().replace(tzinfo=pytz.utc)
-
-    csv_out = filedialog.asksaveasfilename(parent=window, title='Save as...', initialdir='.', defaultextension='.csv') 
-    with open(csv_out, mode='w') as outfile:
-        outfile_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        #write headers
-        # Image name, cell id, date, time, software version number, thresholding technique, contour technique, smoothing technique
-        outfile_writer.writerow(['imagename', 'cellid',  'datetime', 'kernel size', 'kernel deviation', 'mcherry line width', 'contour type', 'thesholding options', 'nuclear GFP', 'cellular GFP', 'cytoplasmic intensity', 'nuc int/cyto int', 'mcherry distance', 'mcherry line gfp intensity', 'user invalidated'])
-        for image, cells  in image_dict.items():
-            for cell in cells:
-                cp = cp_dict.get((image, cell))
-                if cp == None:   # create a new one and run stats
-                    cp = CellPair(image, cell) 
-                    get_stats(cp)
-                    cp_dict[(image, cell)] = cp
-
-                if cp.get_ignored() and drop_ignored.get():
-                    continue
-                line = list()  #all the elements to write
-                try:
-                    nucleus_intensity = cp.get_GFP_Nucleus_Intensity(Contour.CONTOUR)[0]
-                    cellular_intensity = cp.get_GFP_Cell_Intensity()[0]
-                    cytoplasmic_intensity = cellular_intensity - nucleus_intensity
-                    nuc_div_cyto_intensity = float(nucleus_intensity)/float(cytoplasmic_intensity)
-                except:
-                    print('Invalid values in image ' + str(image) + '  and cell ' + str(cell) + '... skipping cell')
-                    continue
-                line.append(image)
-                line.append(cell)
-                line.append(now)
-                line.append(kernel_size_input)
-                line.append(kernel_deviation_input)
-                line.append(mcherry_line_width_input)
-                line.append('contour')  # we might make this variable in the future
-                line.append('cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU') # we might make this variable in the future
-                line.append(nucleus_intensity)   # nuclear gfp
-                line.append(cellular_intensity)   # cellular gfp
-                line.append(cytoplasmic_intensity)
-                line.append(nuc_div_cyto_intensity)
-                line.append(cp.red_dot_distance)
-                line.append(cp.get_mcherry_line_GFP_intensity())
-                line.append(cp.get_ignored())   # check if the user has invalidated this sample
-                outfile_writer.writerow(line)
+    export_to_csv_file(data,window, image_dict, cp_dict, drop_ignored)
 
 
 
@@ -938,323 +756,6 @@ def ignore(image, id):
 
 
 
-
-
-def get_stats(cp):
-
-    global mcherry_line_width_input
-    #outlines screw up the analysis
-    print("test123", 'segmented/' + cp.get_mCherry(use_id=True, outline=False))
-    im = Image.open(output_dir + 'segmented/' + cp.get_mCherry(use_id=True, outline=False))
-    im_GFP = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True, outline=False))
-    im_GFP_for_cellular_intensity = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True))  #has outline
-    testimg = np.array(im)
-    GFP_img = np.array(im_GFP)
-    img_for_cell_intensity = np.array(im_GFP_for_cellular_intensity)
-
-    cell_intensity_gray = cv2.cvtColor(img_for_cell_intensity, cv2.COLOR_RGB2GRAY)
-
-    # was RGBA2GRAY
-    orig_gray_GFP = cv2.cvtColor(GFP_img, cv2.COLOR_RGB2GRAY)
-    orig_gray_GFP_no_bg, background = subtract_background_rolling_ball(orig_gray_GFP, 50, light_background=False,
-                                                       use_paraboloid=False, do_presmooth=True)
-    orig_gray = cv2.cvtColor(testimg, cv2.COLOR_RGB2GRAY)
-    kdev = int(kernel_deviation_input)
-    ksize = int(kernel_size_input)
-    #ksize must be odd
-    if ksize%2 == 0:
-        ksize += 1
-        print("You used an even ksize, updating to odd number +1")
-    gray_mcherry=cv2.GaussianBlur(orig_gray, (3,3), 1)
-    ret_mcherry, thresh_mcherry = cv2.threshold(gray_mcherry, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
-    gray = cv2.GaussianBlur(orig_gray, (ksize,ksize), kdev)
-    # plt.title("blur")
-    # plt.imshow(gray,  cmap='gray')
-    # plt.show()
-    ret, thresh = cv2.threshold(gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
-
-
-    # Some of the cell outlines are split into two circles.  We blur this so that the contour will cover  both of them
-
-    cell_intensity_gray = cv2.GaussianBlur(cell_intensity_gray, (3,3), 1)
-    # plt.title("cell_int_gray")
-    # plt.imshow(cell_intensity_gray, cmap='gray')
-    # plt.show()
-    # plt.title("cell_int")
-    # plt.imshow(img_for_cell_intensity, cmap='gray')
-    # plt.show()
-    cell_int_ret, cell_int_thresh = cv2.threshold(cell_intensity_gray, 0, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C | cv2.THRESH_OTSU)
-    cell_int_cont, cell_int_h = cv2.findContours(cell_int_thresh, 1, 2)
-
-    #we want the biggest contour because that'll be our cellular intensity boundary
-    largest = 0
-    largest_cell_cnt = None
-    #TODO:  I think I should join the two largest that aren't the full box
-    for i, cnt in enumerate(cell_int_cont):
-        #if i == len(cell_int_cont) - 1:    # this is not robust #TODO fix it  -- this throws out the full box contour
-        #    continue
-        area = cv2.contourArea(cnt)
-        if  area > largest:
-            largest = area
-            largest_cell_cnt = cnt
-
-
-    contours, h = cv2.findContours(thresh, 1, 2)
-    contours_mcherry = cv2.findContours(thresh_mcherry, 1, 2)
-    #iterate through contours and throw out the largest (the box) and anything less than the second and third largest)
-    # Contours finds the entire image as a contour and it seems to always put it in the contours[len(contours)].  We should do this more robustly in the future
-
-
-
-    #bestContours, bestArea = find_best_contours(contours)
-    #bestContours_mcherry, bestArea_mcherry = find_best_contours(contours_mcherry)
-
-    #these include the outlines already, so lets edit them
-    edit_im = Image.open(output_dir + 'segmented/' + cp.get_mCherry(use_id=True))
-    edit_im_GFP = Image.open(output_dir + 'segmented/' + cp.get_GFP(use_id=True))
-    edit_testimg = np.array(edit_im)
-    edit_GFP_img = np.array(edit_im_GFP)
-    #edit_testimg = cv2.cvtColor(edit_testimg, cv2.COLOR_GRAY2BGR)
-    #edit_GFP_img = cv2.cvtColor(edit_GFP_img, cv2.COLOR_GRAY2BGR)
-    best_contour = None
-
-    bestContours = list()
-    bestArea = list()
-    for i, cnt in enumerate(contours):
-        #tester = orig_gray
-        if len(cnt) == 0:
-            continue
-        #cv2.drawContours(tester, cnt, 0, 255, 1)
-        #plt.imshow(tester,  cmap='gray')
-        #plt.show()
-        if i == len(contours) - 1:    # this is not robust #TODO fix it
-            continue
-        area = cv2.contourArea(cnt)
-
-        if len(bestContours) == 0:
-            bestContours.append(i)
-            bestArea.append(area)
-            continue
-        if len(bestContours) == 1:
-            bestContours.append(i)
-            bestArea.append(area)
-        if area > bestArea[0]:
-            bestArea[1] = bestArea[0]
-            bestArea[0] = area
-            bestContours[1] = bestContours[0]
-            bestContours[0] = i
-        elif area > bestArea[1]:    # probably won't have a 3rd that is equal, but that would cause a problem
-            bestArea[1] = area
-            bestContours[1] = i
-
-
-    if len(bestContours) == 0:
-        print("we didn't find any contours")
-        return edit_im, edit_im_GFP
-
-    bestContours_mcherry = list()
-    bestArea_mcherry = list()
-    for i, cnt in enumerate(contours_mcherry[0]):
-        #tester = orig_gray
-        if len(cnt) == 0:
-            continue
-        #cv2.drawContours(tester, cnt, 0, 255, 1)
-        #plt.imshow(tester,  cmap='gray')
-        #plt.show()
-        if i == len(contours_mcherry[0]) - 1:    # this is not robust #TODO fix it
-            continue
-        try:
-            area = cv2.contourArea(cnt)
-        except:  # no area
-            continue
-
-        if len(bestContours_mcherry) == 0:
-            bestContours_mcherry.append(i)
-            bestArea_mcherry.append(area)
-            continue
-        if len(bestContours_mcherry) == 1:
-            bestContours_mcherry.append(i)
-            bestArea_mcherry.append(area)
-        if area > bestArea_mcherry[0]:
-            bestArea_mcherry[1] = bestArea_mcherry[0]
-            bestArea_mcherry[0] = area
-            bestContours_mcherry[1] = bestContours_mcherry[0]
-            bestContours_mcherry[0] = i
-        elif area > bestArea_mcherry[1]:    # probably won't have a 3rd that is equal, but that would cause a problem
-            bestArea_mcherry[1] = area
-            bestContours_mcherry[1] = i
-
-    mcherry_line_pts = list()
-    if len(bestContours_mcherry) == 2:
-        c1 = contours_mcherry[0][bestContours_mcherry[0]]
-        c2 = contours_mcherry[0][bestContours_mcherry[1]]
-        M1 = cv2.moments(c1)
-        M2 = cv2.moments(c2)
-        # TODO:  This was code from when we wanted to get the distance between the mCherry centers
-        if M1['m00'] == 0 or M2['m00'] == 0:   # something has gone wrong
-            print("Warning:  The m00 moment = 0")
-            #plt.imshow(edit_testimg,  cmap='gray')
-            #plt.show()
-        else:
-
-            c1x = int(M1['m10'] / M1['m00'])
-            c1y = int(M1['m01'] / M1['m00'])
-            c2x = int(M2['m10'] / M2['m00'])
-            c2y = int(M2['m01'] / M2['m00'])
-            d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
-            #print ('Distance: ' + str(d))
-            cp.set_red_dot_distance(d)
-            cv2.line(edit_testimg, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input))
-            mcherry_line_mask = np.zeros(gray.shape, np.uint8)
-            cv2.line(mcherry_line_mask, (c1x, c1y), (c2x, c2y), 255, int(mcherry_line_width_input))
-            mcherry_line_pts = np.transpose(np.nonzero(mcherry_line_mask))
-
-    if len(bestContours) == 2:  # "There can be only one!" - Connor MacLeod
-        c1 = contours[bestContours[0]]
-        c2 = contours[bestContours[1]]
-        MERGE_CLOSEST = True
-        if MERGE_CLOSEST:   # find the two closest points and just push c2 into c1 there
-            smallest_distance = 999999999
-            second_smallest_distance = 999999999
-            smallest_pair = (-1, -1)  # invalid so it'll cause an error if it is used
-            for pt1 in c1:
-                for i, pt2 in enumerate(c2):
-                    d = math.sqrt(pow(pt1[0][0] - pt2[0][0], 2) + pow(pt1[0][1] - pt2[0][1], 2))
-                    if d < smallest_distance:
-                        second_smallest_distance = smallest_distance
-                        second_smallest_pair = smallest_pair
-                        smallest_distance = d
-                        smallest_pair = (pt1, pt2, i)
-                    elif d < second_smallest_distance:
-                        second_smallest_distance = d
-                        second_smallest_pair = (pt1, pt2, i)
-
-            #now we have the two closest points to each other between the two contours
-            # iterate through the contour 1 until you find pt1, then add every point in c2
-            # to c1, starting from pt2 until you reach pt2 of the second_smallest pair, then
-            # remove points in c1 until you reach pt1 of second_smallest_pair
-            clockwise = True  # we need to figure out which  of the two points shoudl go first
-
-            best_contour = list()
-            #temp hacky way of doing it
-            for pt1 in c1:
-                best_contour.append(pt1)
-                if pt1[0].tolist() != smallest_pair[0][0].tolist():
-                    continue
-                # we are at the closest p1
-                start_loc = smallest_pair[2]
-                finish_loc = start_loc - 1
-                if start_loc == 0:
-                    finish_loc = len(c2) - 1
-                current_loc = start_loc
-                while current_loc != finish_loc:
-                    best_contour.append(c2[current_loc])
-                    current_loc += 1
-                    if current_loc >= len(c2):
-                        current_loc = 0
-                #grab the last point
-                best_contour.append(c2[finish_loc])
-            best_contour = np.array(best_contour).reshape((-1, 1, 2)).astype(np.int32)
-
-
-
-
-
-
-
-# After recent edits this should always be true, but leaving it here in case I messed up.
-    if len(bestContours) == 1:
-        best_contour = contours[bestContours[0]]
-
-
-    print("only 1 contour found")
-    #M1 = cv2.moments(best_contour)
-    #(x1, y1), radius1 = cv2.minEnclosingCircle(best_contour)
-    #center1 = (int(x1), int(y1))
-    #radius1 = int(radius1)
-    #h1 = cv2.convexHull(best_contour)
-    #cv2.drawContours(edit_testimg, [h1, ], 0, 255, 1)
-    #cv2.drawContours(edit_GFP_img, [h1, ], 0, 255, 1)
-    cv2.drawContours(edit_testimg, [best_contour], 0, (0, 255, 0), 1)
-    cv2.drawContours(edit_GFP_img, [best_contour], 0, (0, 255, 0), 1)
-    #cv2.drawContours(edit_GFP_img, [largest_cell_cnt], 0, (255,0,0), 1)
-
-    # Circles instead of contours
-    #cv2.circle(edit_testimg, center1, radius1, (255, 0, 0), 1)
-    #cv2.circle(edit_GFP_img, center1, radius1, (255, 0, 0), 1)
-
-    # compute intensities
-    # lets edit the outlined images, not the regulars
-    #mask_circle = np.zeros(gray.shape, np.uint8)
-    #mask_convex = np.zeros(gray.shape, np.uint8)
-    mask_contour = np.zeros(gray.shape, np.uint8)
-    cell_mask = np.zeros(gray.shape, np.uint8)
-
-    # actual contour mask?
-    #        cv2.drawContours(mask, [contours[cnt]], 255, 100, -1)
-
-    # Circle Mask
-    #cv2.circle(mask_circle, center1, radius1, 255, -1)
-    #cv2.drawContours(mask_convex, [h1, ], 0, 255, 1)
-    #cv2.drawContours(mask_contour, [best_contour], 0, 255, 1)
-    cv2.fillPoly(mask_contour, [best_contour], 255)
-
-
-    # read in the outline file if you need it
-    border_cells = []
-    with open(output_dir + 'masks/' + cp.get_base_name() + '-' + str(cp.id) + '.outline', 'r') as csvfile:
-        csvreader = csv.reader(csvfile)
-        for row in csvreader:
-            border_cells.append([int(row[0]), int(row[1])])
-
-    #cell_list = np.array(border_cells).reshape((-1, 1, 2)).astype(np.int32)
-    #cv2.fillPoly(cell_mask, [cell_ctr], 255)
-
-    #approx = cv2.approxPolyDP(largest_cell_cnt, 0.01 * cv2.arcLength(largest_cell_cnt, True), True)
-    #cv2.drawContours(cell_mask, [largest_cell_cnt], 0, 255, 1)
-    #cv2.fillPoly(cell_mask, [largest_cell_cnt], 255)
-
-    #pts_circle = np.transpose(np.nonzero(mask_circle))
-    #pts_convex = np.transpose(np.nonzero(mask_convex))
-    pts_contour = np.transpose(np.nonzero(mask_contour))
-
-    #cell_pts_contour = np.transpose(np.nonzero(cell_mask))
-
-    # intensity_sum = 0
-    # for p in pts_circle:
-    #     intensity_sum += orig_gray[p[0]][p[1]]
-    # cp.set_GFP_Nucleus_Intensity(Contour.CIRCLE, intensity_sum, len(pts_circle))
-
-    # intensity_sum = 0
-    # for p in pts_convex:
-    #     intensity_sum += orig_gray[p[0]][p[1]]
-    # cp.set_GFP_Nucleus_Intensity(Contour.CONTOURS, intensity_sum, len(pts_convex))
-
-    intensity_sum = 0
-    for p in pts_contour:
-        intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
-    cp.set_GFP_Nucleus_Intensity(Contour.CONTOUR, intensity_sum, len(pts_contour))
-
-
-
-    cell_intensity_sum = 0
-    for p in border_cells:
-        cell_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
-    cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(border_cells))
-
-
-    mcherry_line_intensity_sum = 0
-
-    for p in mcherry_line_pts:
-        mcherry_line_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
-    cp.set_mcherry_line_GFP_intensity(mcherry_line_intensity_sum)
-
-
-
-
-
-    return Image.fromarray(edit_testimg), Image.fromarray(edit_GFP_img)
-
 #TODO:  Deal with resizing
 def on_resize(event):
     try:
@@ -1271,7 +772,7 @@ def display_cell(image, id):
     global export_btn
     global drop_ignored_checkbox
     global window
-
+    global data
     export_btn['state'] = NORMAL
     drop_ignored_checkbox['state'] = NORMAL
 
@@ -1301,7 +802,7 @@ def display_cell(image, id):
     cell_size_x = int(0.23*main_size_x)
     cell_size_y = int(0.23*main_size_x)
 
-    im_cherry, im_gfp = get_stats(cp)
+    im_cherry, im_gfp = stats.get_stats(cp,data)
     image_loc = output_dir + 'segmented/' + cp.get_DIC()  #TODO:  This messes up with the _w50 naming
     im = Image.open(image_loc)
     width, height = im.size
@@ -1510,8 +1011,9 @@ def display_cell(image, id):
     cp_dict[(image, id)] = cp
     window.update()
 
-global data
+
 def tink(conf,window1):
+    global data
     data = conf
     print(data)
     global window
@@ -1565,7 +1067,7 @@ def tink(conf,window1):
 
 
     global export_btn
-    export_btn = customtkinter.CTkButton(window, text='Export to CSV', command=export_to_csv)
+    export_btn = customtkinter.CTkButton(window, text='Export to CSV', command= export_to_csv)
     export_btn.grid(row=0, column=4)
     export_btn['state'] = DISABLED
 
@@ -1739,4 +1241,3 @@ def key(event):
         display_cell(prev, 0)
     if event.keysym == 'Down':
         display_cell(next, 0)
-
