@@ -74,4 +74,3 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             pass
 
 
-
