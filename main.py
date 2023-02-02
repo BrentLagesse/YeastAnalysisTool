@@ -76,9 +76,6 @@ class CellPair:
         print("imagetest:",self.image_name)
         return self.image_name.split('_R3D_REF')[0]
 
-    #Reading in DVFiles
-
-
     def get_DIC(self, use_id=False, outline=True):
         outlinestr = ''
         if not outline:
