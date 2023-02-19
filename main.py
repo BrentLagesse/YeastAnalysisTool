@@ -22,6 +22,7 @@ import skimage.exposure
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 
+from mrc import DVFile
 from mrcnn.my_inference import predict_images
 from mrcnn.preprocess_images import preprocess_images
 from mrcnn.convert_to_image import convert_to_image, convert_to_imagej
@@ -74,38 +75,83 @@ class CellPair:
 
     def get_base_name(self):
         print("imagetest:",self.image_name)
-        return self.image_name.split('_R3D_REF')[0]
+        return self.image_name.split('_PRJ')[0]
 
-    def get_DIC(self, use_id=False, outline=True):
+    def get_DIC(self, use_id=False, outline=True, segmented=False, main_img=False):
         outlinestr = ''
         if not outline:
             outlinestr = '-no_outline'
+        if main_img:
+            return Image.open(output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '.tif')
+        if segmented:
+            return Image.open(output_dir + 'segmented/'+ self.get_base_name() + '_PRJ' + '-' + str(self.id) + outlinestr + '.tif')
         if use_id:
-            return self.get_base_name() + '_R3D_REF' + '-' + str(self.id) + outlinestr + '.tif'
+            image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '-' + str(self.id) + outlinestr + '.tif'
+            return Image.open(image_loc)
         else:
-            return self.get_base_name() + '_R3D_REF.tif'
+            # look for dv file,
+            # open dv file if exists,
+            # return the appropriate image from the stack (actual image)
+            extspl = os.path.splitext(self.image_name)
+            if extspl[1] == '.dv':
+                f = DVFile(input_dir + self.image_name)
+                image = f.asarray()
+                img = Image.fromarray(image[0])
+                return img
+            else:
+                image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + outlinestr + '.tif'
+                return Image.open(image_loc)
+
+
 
     def get_DAPI(self, use_id=False, outline=True):
         outlinestr = ''
         if not outline:
             outlinestr = '-no_outline'
-        if use_id:
-            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w525' + '-' + str(self.id) + outlinestr + '.tif'
-            return self.get_base_name() + '_PRJ' + '_w435' + '-' + str(self.id) + outlinestr + '.tif'
+        # check if there are .dv files and use them first
+        if not use_id:
+            image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '-' + str(self.id) + outlinestr + '.tif'
+            return Image.open(image_loc)
         else:
-            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w525' + outlinestr + '.tif'
-            return self.get_base_name() + '_PRJ' + '_w435' + outlinestr + '.tif'
+            #return self.get_base_name() + '_PRJ' + '_w435' + outlinestr + '.tif'
+            # look for dv file,
+            # open dv file if exists,
+            # return the appropriate image from the stack (actual image)
+            extspl = os.path.splitext(self.image_name)
+            if extspl[1] == '.dv':
+                f = DVFile(input_dir + self.image_name)
+                image = f.asarray()
+                img = Image.fromarray(image[1])
+                return img
+            else:
+                image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + outlinestr + '.tif'
+                return Image.open(image_loc)
 
     def get_GFP(self, use_id=False, outline=True):
         outlinestr = ''
         if not outline:
             outlinestr = '-no_outline'
+        # check if there are .dv files and use them first
         if use_id:
             #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w625' + '-' + str(self.id)  + outlinestr + '.tif'
-            return self.get_base_name() + '_PRJ' + '_w525' + '-' + str(self.id) + outlinestr + '.tif'
+            #image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w525' + '-' + str(self.id) + outlinestr + '.tif'
+            #return Image.open(image_loc)
+            return self.get_base_name() + '_PRJ' + '-' + str(self.id) + outlinestr + '.tif'
         else:
             #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w625' + outlinestr + '.tif'
-            return self.get_base_name() + '_PRJ' + '_w525' + outlinestr + '.tif'
+            # look for dv file,
+            # open dv file if exists,
+            # return the appropriate image from the stack (actual image)
+            extspl = os.path.splitext(self.image_name)
+            if extspl[1] == '.dv':
+                f = DVFile(input_dir + self.image_name)
+                image = f.asarray()
+                img = Image.fromarray(image[2])
+                return img
+            else:
+                #image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w525' + outlinestr + '.tif'
+                #return Image.open(image_loc)
+                return self.get_base_name() + '_PRJ' + outlinestr + '.tif'
 
     def set_GFP_Nucleus_Intensity(self, contour_type, val, total_points):
         self.nucleus_intensity[contour_type] = val
@@ -138,11 +184,23 @@ class CellPair:
         if not outline:
             outlinestr = '-no_outline'
         if use_id:
-            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + 'GFP' + '-' + str(self.id)  + outlinestr + '.tif'
-            return self.get_base_name() + '_PRJ' + '_w625' + '-' + str(self.id) + outlinestr + '.tif'
+            #return output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w625' + '-' + str(self.id) + outlinestr + '.tif'
+            #return Image.open(image_loc)
+            return self.get_base_name() + '_PRJ' +  '-' + str(self.id) + outlinestr + '.tif'
         else:
-            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + 'GFP' + outlinestr + '.tif'
-            return self.get_base_name() + '_PRJ' + '_w625' + outlinestr + '.tif'
+            # look for dv file,
+            # open dv file if exists,
+            # return the appropriate image from the stack (actual image)
+            extspl = os.path.splitext(self.image_name)
+            if extspl[1] == '.dv':
+                f = DVFile(input_dir + self.image_name)
+                image = f.asarray()
+                img = Image.fromarray(image[3])
+                return img
+            else:
+                #return output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w625' + outlinestr + '.tif'
+                #return Image.open(image_loc)
+                return self.get_base_name() + '_PRJ' + outlinestr + '.tif'
 
     #TODO: Remove is Matt says we will never get this one
     def get_CFP(self, use_id=False, outline=True):
@@ -150,9 +208,21 @@ class CellPair:
         if not outline:
             outlinestr = '-no_outline'
         if use_id:
-            return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w435' + '-' + str(self.id)  + outlinestr + '.tif'
+            return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '-' + str(self.id)  + outlinestr + '.tif'
         else:
-            return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w435' + outlinestr + '.tif'
+            #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w435' + outlinestr + '.tif'
+            # look for dv file,
+            # open dv file if exists,
+            # return the appropriate image from the stack (actual image)
+            extspl = os.path.splitext(self.image_name)
+            if extspl[1] == '.dv':
+                f = DVFile(input_dir + self.image_name)
+                image = f.asarray()
+                img = Image.fromarray(image[1])
+                return img
+            else:
+                return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + outlinestr + '.tif'
+
 
     def get_member_variables(self):
         return [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
@@ -190,10 +260,6 @@ def export_to_csv():
     global cp_dict
     global drop_ignored
     export_to_csv_file(data,window, image_dict, cp_dict, drop_ignored)
-
-
-
-
 
 
 
@@ -307,10 +373,10 @@ def segment_images():
 
 
     for image_name in os.listdir(input_dir):
-        if '_R3D_REF' not in image_name:
+        if '_PRJ' not in image_name:
             continue
         extspl = os.path.splitext(image_name)
-        if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
+        if len(extspl) != 2 or extspl[1] != '.dv':  # ignore files that aren't dv
             continue
         seg = None
         image_dict[image_name] = list()
@@ -323,10 +389,16 @@ def segment_images():
 
 
             segmentation_name = output_dir + 'masks/' + image_name
+            seg_ext = os.path.splitext(segmentation_name)
+            segmentation_name = seg_ext[0] + '.tif'
             #image_dict[image_name] = segmentation_name
-            # Load the original raw image and rescale its intensity values
-            image = np.array(Image.open(input_dir + image_name))
-            image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
+            #Load the original raw image and rescale its intensity values
+            #image = np.array(Image.open(input_dir + image_name))
+            f = DVFile(input_dir + image_name)
+            im = f.asarray()
+            image = Image.fromarray(im[0])
+            #image = np.float32(image)
+            image = skimage.exposure.rescale_intensity(np.float32(image), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
             debug_image = image
@@ -409,10 +481,15 @@ def segment_images():
                 if resolve_cells_using_spc110:
 
                     # open the mcherry
-                    basename = image_name.split('_R3D_REF')[0]
-                    mcherry_dir = input_dir + basename + '_PRJ_TIFFS/'
-                    mcherry_image_name = basename + '_PRJ' + '_w625' + '.tif'
-                    mcherry_image = np.array(Image.open(mcherry_dir + mcherry_image_name))
+                    #TODO: open mcherry from dv stack
+
+                    # basename = image_name.split('_R3D_REF')[0]
+                    # mcherry_dir = input_dir + basename + '_PRJ_TIFFS/'
+                    # mcherry_image_name = basename + '_PRJ' + '_w625' + '.tif'
+                    # mcherry_image = np.array(Image.open(mcherry_dir + mcherry_image_name))
+                    f = DVFile(input_dir + image_name)
+                    mcherry_image = f.asarray()[3]
+
                     mcherry_image = skimage.exposure.rescale_intensity(mcherry_image.astype(np.float32), out_range=(0, 1))
                     mcherry_image = np.round(mcherry_image * 255).astype(np.uint8)
 
@@ -578,13 +655,13 @@ def segment_images():
         for i in range(1, int(np.max(seg)) + 1):
             image_dict[image_name].append(i)
 
-        base_image_name = image_name.split('_R3D_REF')[0]
+        base_image_name = image_name.split('_PRJ')[0]
         for images in os.listdir(input_dir):
             # don't overlay if it isn't the right base image
             if base_image_name not in images:
                 continue
             extspl = os.path.splitext(images)
-            if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
+            if len(extspl) != 2 or extspl[1] != '.dv':  # ignore files that aren't dv
                 continue
             if_g1 = ''
             #if choice_var.get() == 'G1 Arrested':   #if it is a g1 cell, do we really need a separate type of file?
@@ -595,8 +672,11 @@ def segment_images():
             to_open = input_dir + images
             if os.path.isdir(to_open):
                 continue
-            image = np.array(Image.open(to_open))
-            image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
+            #image = np.array(Image.open(to_open))
+            f = DVFile(to_open)
+            im = f.asarray()
+            image = Image.fromarray(im[0])
+            image = skimage.exposure.rescale_intensity(np.float32(image), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
             # Convert the image to an RGB image, if necessary
@@ -655,20 +735,20 @@ def segment_images():
         # This is where we overlay what we learned in the DIC onto the other images
 
         filter_dir = input_dir  + base_image_name + '_PRJ_TIFFS/'
-
-        for full_path in ([filter_dir + x for x in os.listdir(filter_dir)] + [input_dir + image_name,]):
-            images = os.path.split(full_path)[1]  # we start in separate directories, but need to end up in the same one
-            # don't overlay if it isn't the right base image
-            if base_image_name not in images:
-                continue
-            extspl = os.path.splitext(images)
-            if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
-                continue
-            #tif_image = images.split('.')[0] + '.tif'
-
-            if os.path.isdir(full_path):
-                continue
-            image = np.array(Image.open(full_path))
+        f = DVFile(input_dir + image_name)
+        for image_num in range(1,3):
+            # images = os.path.split(full_path)[1]  # we start in separate directories, but need to end up in the same one
+            # # don't overlay if it isn't the right base image
+            # if base_image_name not in images:
+            #     continue
+            # extspl = os.path.splitext(images)
+            # if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't dv
+            #     continue
+            # #tif_image = images.split('.')[0] + '.tif'
+            #
+            # if os.path.isdir(full_path):
+            #     continue
+            image = np.array(f.asarray()[image_num])
             image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
@@ -801,21 +881,22 @@ def display_cell(image, id):
     cell_size_y = int(0.23*main_size_x)
 
     im_cherry, im_gfp = stats.get_stats(cp,data)
-    image_loc = output_dir + 'segmented/' + cp.get_DIC()  #TODO:  This messes up with the _w50 naming
-    im = Image.open(image_loc)
+    #image_loc = output_dir + 'segmented/' + cp.get_DIC()  #TODO:  This messes up with the _w50 naming
+    im = cp.get_DIC(main_img=True)
     width, height = im.size
     if height > width:
         scale = float(width)/float(height)
     else:
         scale = float(height) / float(width)
-    im = im.resize((int(scale * main_size_x), main_size_y), Image.ANTIALIAS)
+    im = im.resize((int(scale * main_size_x), main_size_y),  resample=Image.NEAREST)
     img = ImageTk.PhotoImage(im)
     img_label.configure(image=img)
     img_label.image = img
 
 
-    image_loc = output_dir + 'segmented/' + cp.get_DIC(use_id=True)
-    im = Image.open(image_loc)
+    #image_loc = output_dir + 'segmented/' + cp.get_DIC(use_id=True)
+    #TODO: return a segmented image
+    im = cp.get_DIC(segmented=True)
     width, height = im.size
     if height > width:
         scale = float(width) / float(height)
@@ -825,14 +906,14 @@ def display_cell(image, id):
         scale = float(height) / float(width)
         x_scaled = cell_size_x
         y_scaled = int(scale * cell_size_y)
-    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
+    im = im.resize((x_scaled, y_scaled), resample=Image.NEAREST)
     img = ImageTk.PhotoImage(im)
     DIC_label.configure(image=img)
     DIC_label.image = img
     DIC_label_text.configure(text="DIC")
 
-    image_loc = output_dir + 'segmented/' + cp.get_DAPI(use_id=True)
-    im = Image.open(image_loc)
+    #image_loc = output_dir + 'segmented/' + cp.get_DAPI(use_id=True)
+    im = cp.get_DAPI()
     width, height = im.size
     if height > width:
         scale = float(width) / float(height)

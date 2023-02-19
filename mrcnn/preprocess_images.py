@@ -25,14 +25,14 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
     output.close()
 
     for imagename in os.listdir(inputdirectory):
-        if '_R3D_REF' not in imagename:
+        if '_PRJ' not in imagename:
             continue
         extspl = os.path.splitext(imagename)
         #check if there are .dv files and use them first
         image = 0
         if extspl[1] == '.dv':
             f = DVFile(inputdirectory + imagename)   #the REF image should have only 1 picture in the stack
-            image = f.asarray()
+            image = f.asarray()[0]
 
         #if we don't have .dv files, see if there are tifs in the directory with the proper name structure
 
