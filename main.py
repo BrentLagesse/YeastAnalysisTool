@@ -773,8 +773,10 @@ def segment_images():
 
             # Iterate over each integer in the segmentation and save the outline of each cell onto the outline file
             for i in range(1, int(np.max(seg) + 1)):
-                cell_tif_image = images.split('.')[0] + '-' + str(i) + '.tif'
-                no_outline_image = images.split('.')[0] + '-' + str(i) + '-no_outline.tif'
+                cell_tif_image = tif_image.split('.')[0] + '-' + str(i) + '.tif'
+                no_outline_image = tif_image.split('.')[0] + '-' + str(i) + '-no_outline.tif'
+                # cell_tif_image = images.split('.')[0] + '-' + str(i) + '.tif'
+                # no_outline_image = images.split('.')[0] + '-' + str(i) + '-no_outline.tif'
 
 
 
@@ -895,7 +897,6 @@ def display_cell(image, id):
 
 
     #image_loc = output_dir + 'segmented/' + cp.get_DIC(use_id=True)
-    #TODO: return a segmented image
     im = cp.get_DIC(segmented=True)
     width, height = im.size
     if height > width:
