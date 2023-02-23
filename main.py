@@ -70,6 +70,7 @@ class CellPair:
         self.cell_total_points = 0
         self.ignored = False
         self.mcherry_line_gfp_intensity = 0
+        self.line_gfp_intensity = 0
 
     def set_red_dot_distance(self, d):
         self.red_dot_distance = d
@@ -129,11 +130,22 @@ class CellPair:
             print ("Intensity is 0, this is unlikely")
         return self.cell_intensity, self.cell_total_points
 
-    def set_mcherry_line_GFP_intensity(self, intensity):
-        self.mcherry_line_gfp_intensity = intensity
+	# GFP
+    def set_line_GFP_intensity(self, intensity):
+        self.line_gfp_intensity = intensity
+    def get_line_GFP_intensity(self):
+        return self.line_gfp_intensity
+# # mCherry
+#     def set_line_GFP_intensity(self, intensity):
+#         self.line_gfp_intensity = intensity
+#     def get_line_GFP_intensity(self):
+#         return self.line_gfp_intensity
 
-    def get_mcherry_line_GFP_intensity(self):
-        return self.mcherry_line_gfp_intensity
+    # def set_mcherry_line_GFP_intensity(self, intensity):
+    #     self.mcherry_line_gfp_intensity = intensity
+
+    # def get_mcherry_line_GFP_intensity(self):
+    #     return self.mcherry_line_gfp_intensity
 
     def get_mCherry(self, use_id=False, outline=True):
         outlinestr = ''
@@ -747,9 +759,9 @@ def ignore(image, id):
     global cp_dict
     cp_dict[(image, id)].set_ignored(not cp_dict[(image, id)].get_ignored())
     if cp_dict[(image, id)].get_ignored():
-        ignore_btn.config(text = 'ENABLE')
+        ignore_btn.configure(text = 'ENABLE')
     else:
-        ignore_btn.config(text = 'IGNORE')
+        ignore_btn.configure(text = 'IGNORE')
 
     # attempt to get distance
     #testimg = cv2.imread(image_loc, cv2.IMREAD_UNCHANGED)
@@ -946,13 +958,13 @@ def display_cell(image, id):
     #rad3 = Radiobutton(window, text='One Red Dot', value=1, variable=cp.red_dot_count)
     #rad4 = Radiobutton(window, text='Two Red Dot', value=2, variable=cp.red_dot_count)
     dist_mcherry = customtkinter.CTkLabel(window)
-    dist_mcherry.config(text="Distance: {:.3f}".format(cp.red_dot_distance))
+    dist_mcherry.configure(text="Distance: {:.3f}".format(cp.red_dot_distance))
     #rad3.grid(row=6, column=3)
     #rad4.grid(row=7, column=3)
     dist_mcherry.grid(row=7, column=3)
 
     intensity_mcherry_lbl = customtkinter.CTkLabel(window)
-    intensity_mcherry_lbl.config(text="Line GFP intensity: {}".format(cp.get_mcherry_line_GFP_intensity()))
+    intensity_mcherry_lbl.configure(text="Line GFP intensity: {}".format(cp.get_line_GFP_intensity()))
     intensity_mcherry_lbl.grid(row=8, column=3)
 
 
@@ -965,11 +977,17 @@ def display_cell(image, id):
     #rad8 = Radiobutton(window, text='Two Green Dot', value=2, variable=cp.green_dot_count)
     try:
         intense1 = customtkinter.CTkLabel(window)
-        intense1.config(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
+        intense1.configure(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
         intense2 = customtkinter.CTkLabel(window)
-        intense2.config(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
+        intense2.configure(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
+        dist_mcherry_GFP = customtkinter.CTkLabel(window)
+        dist_mcherry_GFP.configure(text="Distance: {:.3f}".format(cp.red_dot_distance))
+        intensity_mcherry_lbl_GFP = customtkinter.CTkLabel(window)
+        intensity_mcherry_lbl_GFP.configure(text="Line GFP intensity: {}".format(cp.get_line_GFP_intensity()))
         intense1.grid(row=7, column=4)
         intense2.grid(row=8, column=4)
+        dist_mcherry_GFP.grid(row=9, column=4)
+        intensity_mcherry_lbl_GFP.grid(row=10, column=4)
 
     except:
         print("error with this cell intensity")
@@ -983,9 +1001,9 @@ def display_cell(image, id):
 
 
     next_btn = customtkinter.CTkButton(window, text="Next Pair", command=partial(display_cell, image, id+1))
-    next_btn.grid(row=10, column=4)
+    next_btn.grid(row=12, column=4)
     prev_btn = customtkinter.CTkButton(window, text="Previous Pair", command=partial(display_cell, image, id-1))
-    prev_btn.grid(row=10, column=2)
+    prev_btn.grid(row=12, column=2)
 
     #TODO:  Do this in a less stupid way.
     found_me = False

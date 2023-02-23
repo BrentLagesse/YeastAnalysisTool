@@ -17,7 +17,7 @@ source venv/bin/activate
 
 sh init.sh
 
-#NOTE:  If you are using an M1 mac, run sh initm1.sh instead.  
+#NOTE:  If you are using an M1 mac, run sh initm1.sh instead.  To Install tensorflow on mac m1 please follow the instructions in this link https://developer.apple.com/metal/tensorflow-plugin/
 
 You can do this while the other script is still running -- Download this link https://drive.google.com/file/d/1moUKvWFYQoWg0z63F0JcSd3WaEPa4UY7/view?usp=sharing and put it in the weights directory the previous script just made.
 
