@@ -747,9 +747,9 @@ def ignore(image, id):
     global cp_dict
     cp_dict[(image, id)].set_ignored(not cp_dict[(image, id)].get_ignored())
     if cp_dict[(image, id)].get_ignored():
-        ignore_btn.config(text = 'ENABLE')
+        ignore_btn.configure(text = 'ENABLE')
     else:
-        ignore_btn.config(text = 'IGNORE')
+        ignore_btn.configure(text = 'IGNORE')
 
     # attempt to get distance
     #testimg = cv2.imread(image_loc, cv2.IMREAD_UNCHANGED)
@@ -946,13 +946,13 @@ def display_cell(image, id):
     #rad3 = Radiobutton(window, text='One Red Dot', value=1, variable=cp.red_dot_count)
     #rad4 = Radiobutton(window, text='Two Red Dot', value=2, variable=cp.red_dot_count)
     dist_mcherry = customtkinter.CTkLabel(window)
-    dist_mcherry.config(text="Distance: {:.3f}".format(cp.red_dot_distance))
+    dist_mcherry.configure(text="Distance: {:.3f}".format(cp.red_dot_distance))
     #rad3.grid(row=6, column=3)
     #rad4.grid(row=7, column=3)
     dist_mcherry.grid(row=7, column=3)
 
     intensity_mcherry_lbl = customtkinter.CTkLabel(window)
-    intensity_mcherry_lbl.config(text="Line GFP intensity: {}".format(cp.get_mcherry_line_GFP_intensity()))
+    intensity_mcherry_lbl.configure(text="Line GFP intensity: {}".format(cp.get_mcherry_line_GFP_intensity()))
     intensity_mcherry_lbl.grid(row=8, column=3)
 
 
@@ -965,9 +965,9 @@ def display_cell(image, id):
     #rad8 = Radiobutton(window, text='Two Green Dot', value=2, variable=cp.green_dot_count)
     try:
         intense1 = customtkinter.CTkLabel(window)
-        intense1.config(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
+        intense1.configure(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
         intense2 = customtkinter.CTkLabel(window)
-        intense2.config(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
+        intense2.configure(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
         intense1.grid(row=7, column=4)
         intense2.grid(row=8, column=4)
 
