@@ -320,14 +320,12 @@ def get_stats(cp, conf):
         cell_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
     cp.set_GFP_Cell_Intensity(cell_intensity_sum, len(border_cells))
 
-    line_intensity_sum = 0
+
+    mcherry_line_intensity_sum = 0
+
     for p in mcherry_line_pts:
-        line_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
-    cp.set_line_GFP_intensity(line_intensity_sum)
-    # GFP_line_intensity_sum = 0
-    # for p in mcherry_line_pts:
-    #     GFP_line_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
-    # cp.set_GFP_line_GFP_intensity(GFP_line_intensity_sum)
+        mcherry_line_intensity_sum += orig_gray_GFP_no_bg[p[0]][p[1]]
+    cp.set_mcherry_line_GFP_intensity(mcherry_line_intensity_sum)
 
 
 

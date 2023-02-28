@@ -192,9 +192,8 @@ kernel_deviation_var = tkinter.StringVar(value=data['kernel_diviation'])
 
 def configuration_window():
     global configure_window
-    configure_window = customtkinter.CTkToplevel(window)
+    configure_window = customtkinter.CTkToplevel()
     configure_window.geometry("450x450")
-    configure_window.wm_transient(window)
 
     # input directory button
     input_btn = customtkinter.CTkButton(configure_window, text="Set Input Directory", command=set_input_directory)
