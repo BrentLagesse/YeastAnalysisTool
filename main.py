@@ -358,6 +358,7 @@ def segment_images():
             #TODO:   If G1 Arrested, we don't want to merge neighbors and ignore non-budding cells
             #choices = ['Metaphase Arrested', 'G1 Arrested']
             outlines = np.zeros(seg.shape)
+            lines_to_draw = dict()
             if choice_var == 'Metaphase Arrested':
                 # Create a raw file to store the outlines
 
@@ -418,7 +419,6 @@ def segment_images():
                     neighbor_count = dict()
                 #TODO:  Examine the spc110 dots and make closest dots neighbors
                 resolve_cells_using_spc110 = use_spc110.get()
-                lines_to_draw = dict()
                 if resolve_cells_using_spc110:
 
                     # open the mcherry

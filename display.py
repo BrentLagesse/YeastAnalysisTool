@@ -251,7 +251,7 @@ def configuration_window():
 
     # choice dropdown
     combobox = customtkinter.CTkComboBox(master=configure_window,
-                                         values=["Metaphase Arrested", "option 2"],
+                                         values=["Metaphase Arrested", "G1 Arrested"],
                                          command=optionmenu_callback,
                                          variable=data['arrested'])
     combobox.grid(row=6, column=1, padx=10, pady=10)
