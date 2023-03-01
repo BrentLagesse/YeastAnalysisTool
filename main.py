@@ -410,9 +410,8 @@ def segment_images():
                 image = np.expand_dims(image, axis=-1)
                 image = np.tile(image, 3)
 
-            # Open the segmentation file    # TODO -- make it show it is choosing the correc segmented
-            seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/2021_0629_M2210_004_R3D_REF.tif
-
+            # Open the segmentation file    # TODO -- make it show it is choosing the correct segmented
+            seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/M***.tif'
 
             #TODO:   If G1 Arrested, we don't want to merge neighbors and ignore non-budding cells
             #choices = ['Metaphase Arrested', 'G1 Arrested']
@@ -897,6 +896,7 @@ def display_cell(image, id):
 
 
     #image_loc = output_dir + 'segmented/' + cp.get_DIC(use_id=True)
+    #TODO: return a segmented image
     im = cp.get_DIC(segmented=True)
     width, height = im.size
     if height > width:
@@ -1223,19 +1223,19 @@ def tink(conf,window1):
     ID_label.grid(row=6, column=0)
 
     global DIC_label_text
-    DIC_label_text = customtkinter.CTkLabel(window, text_font=("Times New Roman", 18, "bold"))
+    DIC_label_text = customtkinter.CTkLabel(window, font=("Times New Roman", 18, "bold"))
     DIC_label_text.grid(row=5, column=1)
 
     global DAPI_label_text
-    DAPI_label_text = customtkinter.CTkLabel(window, foreground='blue', text_font=("Times New Roman", 18, "bold"))
+    DAPI_label_text = customtkinter.CTkLabel(window, fg_color='blue', font=("Times New Roman", 18, "bold"))
     DAPI_label_text.grid(row=5, column=2)
 
     global mCherry_label_text
-    mCherry_label_text = customtkinter.CTkLabel(window, foreground='red', text_font=("Times New Roman", 18, "bold"))
+    mCherry_label_text = customtkinter.CTkLabel(window, fg_color='red', font=("Times New Roman", 18, "bold"))
     mCherry_label_text.grid(row=5, column=3)
 
     global GFP_label_text
-    GFP_label_text = customtkinter.CTkLabel(window, foreground='green', text_font=("Times New Roman", 18, "bold"))
+    GFP_label_text = customtkinter.CTkLabel(window, fg_color='green', font=("Times New Roman", 18, "bold"))
     GFP_label_text.grid(row=5, column=4)
 
     global DIC_label
