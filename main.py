@@ -61,6 +61,7 @@ class CellPair:
         self.nuclei_count = 1
         self.red_dot_count = 1
         self.red_dot_distance = 0
+        self.gfp_red_dot_distance = 0
         self.cyan_dot_count = 1
         self.green_dot_count = 1
         self.ground_truth = False
@@ -70,9 +71,13 @@ class CellPair:
         self.cell_total_points = 0
         self.ignored = False
         self.mcherry_line_gfp_intensity = 0
+        self.gfp_line_gfp_intensity = 0
 
     def set_red_dot_distance(self, d):
         self.red_dot_distance = d
+
+    def set_gfp_red_dot_distance(self, d):
+        self.gfp_red_dot_distance = d
 
     def get_base_name(self):
         print("imagetest:",self.image_name)
@@ -131,6 +136,12 @@ class CellPair:
 
     def set_mcherry_line_GFP_intensity(self, intensity):
         self.mcherry_line_gfp_intensity = intensity
+
+    def set_GFP_line_GFP_intensity(self, intensity):
+        self.gfp_line_gfp_intensity = intensity
+
+    def get_GFP_line_GFP_intensity(self):
+        return self.gfp_line_gfp_intensity
 
     def get_mcherry_line_GFP_intensity(self):
         return self.mcherry_line_gfp_intensity
@@ -968,8 +979,14 @@ def display_cell(image, id):
         intense1.configure(text="Nucleus Intensity Sum: {}".format(cp.nucleus_intensity[Contour.CONTOUR]))
         intense2 = customtkinter.CTkLabel(window)
         intense2.configure(text="Cellular Intensity Sum: {}".format(cp.cell_intensity))
+        intense3 = customtkinter.CTkLabel(window)
+        intense3.configure(text="Line GFP intensity: {}".format(cp.get_GFP_line_GFP_intensity()))
+        dist_gfp = customtkinter.CTkLabel(window)
+        dist_gfp.configure(text="GFP Distance: {:.3f}".format(cp.gfp_red_dot_distance))
+        dist_gfp.grid(row=7, column=5)
         intense1.grid(row=7, column=4)
         intense2.grid(row=8, column=4)
+        intense3.grid(row=8, column=5)
 
     except:
         print("error with this cell intensity")
