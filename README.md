@@ -64,6 +64,7 @@ If pulled a different branch other than ryota-main, code might not run and will 
 Change foreground parameters to fg_color<br/>
 Change text_font parameters to font<br/>
 
+In main.py: <br/>
 Look for<br/>
   csvwriter = csv.writer(csvfile)<br/>
 Change to <br/>
