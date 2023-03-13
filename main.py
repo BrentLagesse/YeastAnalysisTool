@@ -895,8 +895,8 @@ def display_cell(image, id):
     img_label.image = img
 
 
-    #image_loc = output_dir + 'segmented/' + cp.get_DIC(use_id=True)
-    #TODO: return a segmented image
+    #TODO: Do not show DIC and DAPI if file is video/live cell images
+    #if os.path.getsize(input_dir + image) < 9000000:                #if file size is less than 9MB show DIC and DAPI
     im = cp.get_DIC(segmented=True)
     width, height = im.size
     if height > width:
@@ -913,7 +913,6 @@ def display_cell(image, id):
     DIC_label.image = img
     DIC_label_text.configure(text="DIC")
 
-    #image_loc = output_dir + 'segmented/' + cp.get_DAPI(use_id=True)
     im = cp.get_DAPI()
     width, height = im.size
     if height > width:
@@ -930,6 +929,7 @@ def display_cell(image, id):
     DAPI_label.image = img
     DAPI_label_text.configure(text="DAPI")
 
+    #Live Cell Images only supports mcherry and GFP
     image_loc = output_dir + 'segmented/' + cp.get_mCherry(use_id=True)
     im = im_cherry
     width, height = im.size
@@ -1215,7 +1215,7 @@ def tink(conf,window1):
     img_title_label.grid(row=3, column=3)
 
     global img_label
-    img_label = customtkinter.CTkLabel(window)
+    img_label = customtkinter.CTkLabel(window, text='')
     img_label.grid(row=4, column=1, columnspan=5)
 
     global ID_label
@@ -1239,19 +1239,19 @@ def tink(conf,window1):
     GFP_label_text.grid(row=5, column=4)
 
     global DIC_label
-    DIC_label = customtkinter.CTkLabel(window)
+    DIC_label = customtkinter.CTkLabel(window, text='')
     DIC_label.grid(row=6, column=1)
 
     global DAPI_label
-    DAPI_label = customtkinter.CTkLabel(window)
+    DAPI_label = customtkinter.CTkLabel(window, text='')
     DAPI_label.grid(row=6, column=2)
 
     global mCherry_label
-    mCherry_label = customtkinter.CTkLabel(window)
-    mCherry_label.grid(row=6, column=3) 
+    mCherry_label = customtkinter.CTkLabel(window, text='')
+    mCherry_label.grid(row=6, column=3)
 
     global GFP_label
-    GFP_label = customtkinter.CTkLabel(window)
+    GFP_label = customtkinter.CTkLabel(window, text='')
     GFP_label.grid(row=6, column=4)
     img_label.bind("<Button-1>", callback)
     window.bind("<Left>", key)

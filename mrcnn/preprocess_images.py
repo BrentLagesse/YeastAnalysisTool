@@ -23,15 +23,19 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
     output = open(outputfile, "w")
     output.write("ImageId, EncodedRLE" + "\n")
     output.close()
-
     for imagename in os.listdir(inputdirectory):
         if '_PRJ' not in imagename:
             continue
         extspl = os.path.splitext(imagename)
         #check if there are .dv files and use them first
         image = 0
+        fsize = os.path.getsize(inputdirectory + imagename)
+        if fsize > 8230000:
+            #File is a live cell imaging that has more than 4 images
+            f = DVFile(inputdirectory + imagename)
+            image = f.asarray()[0]
         if extspl[1] == '.dv':
-            f = DVFile(inputdirectory + imagename)   #the REF image should have only 1 picture in the stack
+            f = DVFile(inputdirectory + imagename)
             image = f.asarray()[0]
 
         #if we don't have .dv files, see if there are tifs in the directory with the proper name structure
@@ -40,7 +44,6 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             continue
         else:
             image = np.array(Image.open(inputdirectory + imagename))
-
         try:
             if verbose:
                 print ("Preprocessing ", imagename)
