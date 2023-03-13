@@ -28,3 +28,43 @@ This starts the program.  Change the Input directory to one of your picture dire
 click start analysis and it should start going (the button will probably turn blue and stay that way a while. 
 
 After that runs (it'll take a few minutes or so, probably), you should see the images and the cells.  
+
+###########################################################################################################################################################
+
+Running on Windows
+Having the same assumptions that Python(3.10) is installed in the machine
+
+1. Git clone https://github.com/BrentLagesse/YeastAnalysisTool.git  #Clone github Repo using
+
+2. cd YeastAnalysisTool
+
+3. curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py          #Download pip
+
+4. python get-pip.py
+
+5. py -m pip install --upgrade pip
+
+6. py -m pip install --user virtualenv                              #install virtual environment
+
+7. py -m venv venv                                                  #create venv folder
+
+8. .\venv\Scripts\activate                                          #activate venv
+
+9. pip install -r requirementsWindows.txt                           #install all windows requirements
+
+10. Run init.bat
+
+11. Download this file https://drive.google.com/file/d/1moUKvWFYQoWg0z63F0JcSd3WaEPa4UY7/view
+Save the downloaded .h5 file to the “.\weights” directory created by running init.bat (for windows)
+Create output Folders within the YeastAnalysisTool folder, and create a folder:  “.\output\segmented”
+
+!!! Important !!!
+If pulled a different branch other than ryota-main, code might not run and will need slight changes to run on windows. 
+
+Change foreground parameters to fg_color
+Change text_font parameters to font
+
+Look for
+  csvwriter = csv.writer(csvfile)
+Change to 
+  csvwriter = csv.writer(csvfile, lineterminator='\n')
