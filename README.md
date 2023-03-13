@@ -58,13 +58,13 @@ Having the same assumptions that Python(3.10) is installed in the machine
 Save the downloaded .h5 file to the “.\weights” directory created by running init.bat (for windows)
 Create output Folders within the YeastAnalysisTool folder, and create a folder:  “.\output\segmented”
 
-!!! Important !!!
-If pulled a different branch other than ryota-main, code might not run and will need slight changes to run on windows. 
+!!! Important !!!<br/>
+If pulled a different branch other than ryota-main, code might not run and will need slight changes to run on windows. <br/>
 
-Change foreground parameters to fg_color
-Change text_font parameters to font
+Change foreground parameters to fg_color<br/>
+Change text_font parameters to font<br/>
 
-Look for
-  csvwriter = csv.writer(csvfile)
-Change to 
-  csvwriter = csv.writer(csvfile, lineterminator='\n')
+Look for<br/>
+  csvwriter = csv.writer(csvfile)<br/>
+Change to <br/>
+  csvwriter = csv.writer(csvfile, lineterminator='\n')<br/>
