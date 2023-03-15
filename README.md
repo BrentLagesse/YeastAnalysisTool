@@ -70,6 +70,6 @@ Look for<br/>
 Change to <br/>
 &emsp;csvwriter = csv.writer(csvfile, lineterminator='\n')<br/>
 
-image.astype(np.float32)
-becomes, 
+image.astype(np.float32)<br/>
+becomes,<br/>
 &emsp;np.float32(image)
