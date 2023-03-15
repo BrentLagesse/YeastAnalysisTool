@@ -66,6 +66,10 @@ Change text_font parameters to font<br/>
 
 In main.py: <br/>
 Look for<br/>
-  csvwriter = csv.writer(csvfile)<br/>
+&emspcsvwriter = csv.writer(csvfile)<br/>
 Change to <br/>
-  csvwriter = csv.writer(csvfile, lineterminator='\n')<br/>
+&emspcsvwriter = csv.writer(csvfile, lineterminator='\n')<br/>
+
+image.astype(np.float32)
+becomes, 
+&emspnp.float32(image)
