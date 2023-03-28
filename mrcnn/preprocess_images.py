@@ -3,7 +3,6 @@ from PIL import Image
 import os
 import skimage.exposure
 import skimage.filters
-from mrc import DVFile
 
 '''Convert input images to RGB format in separate folders required by MRCNN
 
@@ -23,34 +22,20 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
     output = open(outputfile, "w")
     output.write("ImageId, EncodedRLE" + "\n")
     output.close()
+
     for imagename in os.listdir(inputdirectory):
-        if '_PRJ' not in imagename:
+        if '_R3D_REF' not in imagename:
             continue
         extspl = os.path.splitext(imagename)
-        #check if there are .dv files and use them first
-        image = 0
-        fsize = os.path.getsize(inputdirectory + imagename)
-        if fsize > 8230000:
-            #File is a live cell imaging that has more than 4 images
-            f = DVFile(inputdirectory + imagename)
-            image = f.asarray()[0]
-        if extspl[1] == '.dv':
-            f = DVFile(inputdirectory + imagename)
-            image = f.asarray()[0]
-
-        #if we don't have .dv files, see if there are tifs in the directory with the proper name structure
-
-        elif len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
+        if len(extspl) != 2 or extspl[1] != '.tif':  # ignore files that aren't tifs
             continue
-        else:
-            image = np.array(Image.open(inputdirectory + imagename))
         try:
             if verbose:
                 print ("Preprocessing ", imagename)
             existing_files = os.listdir(mask_dir)
             if imagename in existing_files and use_cache:   #skip this if we have a mask already
                 continue
-
+            image = np.array(Image.open(inputdirectory + imagename))
             if len(image.shape) > 2:
                 image = image[:, :, 0]
             height = image.shape[0]
@@ -75,5 +60,6 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             output.close()
         except IOError:
             pass
+
 
 
