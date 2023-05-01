@@ -16,8 +16,7 @@ def load_image(image_path):
     return Image.open(image_path)
 
 def preprocess_image(image):
-    img_array = np.array(image)
-    return cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
 
 def blur_image(image, kernel_size, kernel_deviation):
     kdev = int(kernel_deviation)
