@@ -569,19 +569,19 @@ def tink(conf, window1):
     ID_label.grid(row=6, column=0)
 
     global DIC_label_text
-    DIC_label_text = customtkinter.CTkLabel(window, text_font=("Times New Roman", 18, "bold"))
+    DIC_label_text = customtkinter.CTkLabel(window)
     DIC_label_text.grid(row=5, column=1)
 
     global DAPI_label_text
-    DAPI_label_text = customtkinter.CTkLabel(window, foreground='blue', text_font=("Times New Roman", 18, "bold"))
+    DAPI_label_text = customtkinter.CTkLabel(window, fg_color='blue')
     DAPI_label_text.grid(row=5, column=2)
 
     global mCherry_label_text
-    mCherry_label_text = customtkinter.CTkLabel(window, foreground='red', text_font=("Times New Roman", 18, "bold"))
+    mCherry_label_text = customtkinter.CTkLabel(window, fg_color='red')
     mCherry_label_text.grid(row=5, column=3)
 
     global GFP_label_text
-    GFP_label_text = customtkinter.CTkLabel(window, foreground='green', text_font=("Times New Roman", 18, "bold"))
+    GFP_label_text = customtkinter.CTkLabel(window, fg_color='green')
     GFP_label_text.grid(row=5, column=4)
 
     global DIC_label
