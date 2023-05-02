@@ -207,7 +207,7 @@ def calculate_bestContours(contours, contours_mcherry, edit_testimg, type):
 
     if not bestContours:
         print("we didn't find any contours")
-        return 0,0
+        return 0,0,0
 
     bestContours_mcherry, bestArea_mcherry = get_best_contours(contours_mcherry[0])
 
