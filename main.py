@@ -1,35 +1,17 @@
-# from curses import window
-import pytz
 from tkinter import *
 import customtkinter
-from tkinter import filedialog
 from tkinter.ttk import *
 from functools import partial
 from scipy.spatial import distance as dist
-import math
 
 import opts as opt
 import os
-import shutil
 
-import csv
-import cv2
-import numpy as np
 from PIL import ImageTk, Image
-import PIL
-import skimage.morphology
-import skimage.exposure
-import matplotlib.pyplot as plt
-import matplotlib.patheffects as PathEffects
 
 from mrc import DVFile
-from mrcnn.my_inference import predict_images
-from mrcnn.preprocess_images import preprocess_images
-from mrcnn.convert_to_image import convert_to_image, convert_to_imagej
 from enum import Enum
-from cv2_rolling_ball import subtract_background_rolling_ball
 import stats
-import services
 import segment_images
 from export import export_to_csv_file
 
@@ -145,10 +127,6 @@ class CellPair:
             image_loc = f'{output_dir}/segmented/{self.get_base_name()}_PRJ-{str(self.id)}{outlinestr}.tif'
             return Image.open(image_loc)
         else:
-            #return self.get_base_name() + '_PRJ' + '_w435' + outlinestr + '.tif'
-            # look for dv file,
-            # open dv file if exists,
-            # return the appropriate image from the stack (actual image)
             extspl = os.path.splitext(self.image_name)
             if extspl[1] == '.dv':
                 f = DVFile(input_dir + self.image_name)
@@ -167,18 +145,10 @@ class CellPair:
                 else f'{self.get_base_name()}_PRJ_w525{outlinestr}.tif'
             )
         if use_id:
-                #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w625' + '-' + str(self.id)  + outlinestr + '.tif'
-                #image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w525' + '-' + str(self.id) + outlinestr + '.tif'
-                #return Image.open(image_loc)
             return f'{self.get_base_name()}_PRJ-{str(self.id)}{outlinestr}.tif'
-        #return self.get_base_name() + '/' + self.get_base_name() + '_PRJ_TIFFS/' + self.get_base_name() + '_w625' + outlinestr + '.tif'
-        # look for dv file,
-        # open dv file if exists,
-        # return the appropriate image from the stack (actual image)
+
         extspl = os.path.splitext(self.image_name)
         if extspl[1] != '.dv':
-                    #image_loc = output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w525' + outlinestr + '.tif'
-                    #return Image.open(image_loc)
             return f'{self.get_base_name()}_PRJ{outlinestr}.tif'
         f = DVFile(input_dir + self.image_name)
         image = f.asarray()
@@ -225,12 +195,7 @@ class CellPair:
                 else f'{self.get_base_name()}_PRJ_w625{outlinestr}.tif'
             )
         if use_id:
-                #return output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w625' + '-' + str(self.id) + outlinestr + '.tif'
-                #return Image.open(image_loc)
             return f'{self.get_base_name()}_PRJ-{str(self.id)}{outlinestr}.tif'
-        # look for dv file,
-        # open dv file if exists,
-        # return the appropriate image from the stack (actual image)
         extspl = os.path.splitext(self.image_name)
         if extspl[1] != '.dv':
                     #return output_dir + 'segmented/' + self.get_base_name() + '_PRJ' + '_w625' + outlinestr + '.tif'

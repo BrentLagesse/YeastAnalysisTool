@@ -1,10 +1,3 @@
-# from curses import window
-import pytz
-from tkinter import *
-import customtkinter
-from tkinter import filedialog
-from tkinter.ttk import *
-from functools import partial
 from scipy.spatial import distance as dist
 import math
 
@@ -15,7 +8,7 @@ import shutil
 import csv
 import cv2
 import numpy as np
-from PIL import ImageTk, Image
+from PIL import Image
 import PIL
 import skimage.morphology
 import skimage.exposure
@@ -28,12 +21,11 @@ from mrcnn.preprocess_images import preprocess_images
 from mrcnn.convert_to_image import convert_to_image, convert_to_imagej
 from enum import Enum
 from cv2_rolling_ball import subtract_background_rolling_ball
-import stats
 import services
 from export import export_to_csv_file
 
 global data
-def get_neighbor_count(seg_image, center, radius=1, loss=0):
+def get_neighbor_count(seg_image, center, radius=1):
         # TODO:  account for loss as distance gets larger
         neighbor_list = []
         neighbors = seg_image[center[0] - radius:center[0] + radius + 1, center[1] - radius:center[1] + radius + 1]
@@ -43,32 +35,6 @@ def get_neighbor_count(seg_image, center, radius=1, loss=0):
                     if (x, y) != (radius, radius) and int(val) != 0
                     and int(val) != int(seg_image[center[0], center[1]]))
         return neighbor_list
-
-def segment_img(seg, cell_tif_image, no_outline_image, use_cache):
-    seg = seg
-    for i in range(1, int(np.max(seg) + 1)):
-        a = np.where(seg == i)  # somethin bad is happening when i = 4 on my tests
-        min_x = max(np.min(a[0]) - 1, 0)
-        max_x = min(np.max(a[0]) + 1, seg.shape[0])
-        min_y = max(np.min(a[1]) - 1, 0)
-        max_y = min(np.max(a[1]) + 1, seg.shape[1])
-
-        if not os.path.exists(
-                output_dir + 'masks/' + base_image_name + '-' + str(i) + '.outline') or not use_cache:
-            with open(output_dir + 'masks/' + base_image_name + '-' + str(i) + '.outline', 'w') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerows(zip(a[0] - min_x, a[1] - min_y))
-
-        cellpair_image = image_outlined[min_x: max_x, min_y:max_y]
-        not_outlined_image = image[min_x: max_x, min_y:max_y]
-        if not os.path.exists(
-                output_dir + 'segmented/' + cell_tif_image) or not use_cache:  # don't redo things we already have
-            plt.imsave(output_dir + 'segmented/' + cell_tif_image, cellpair_image, dpi=600, format='TIFF')
-            plt.clf()
-        if not os.path.exists(
-                output_dir + 'segmented/' + no_outline_image) or not use_cache:  # don't redo things we already have
-            plt.imsave(output_dir + 'segmented/' + no_outline_image, not_outlined_image, dpi=600, format='TIFF')
-            plt.clf()
 
 def process_images(use_cache):
     preprocessed_image_directory = f"{output_dir}preprocessed_images/"
@@ -229,11 +195,7 @@ def segment_images(conf, use_cache, use_spc110):
                 image = np.tile(image, 3)
 
             # Open the segmentation file    # TODO -- make it show it is choosing the correct segmented
-            if img_format == 'tiff':
-                seg = np.array(Image.open(
-                    segmentation_name))  # TODO:  on first run, this can't find outputs/masks/2021_0629_M2210_004_R3D_REF.tif
-            else:
-                seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/M***.tif'
+            seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/M***.tif'
 
             # TODO:   If G1 Arrested, we don't want to merge neighbors and ignore non-budding cells
             # choices = ['Metaphase Arrested', 'G1 Arrested']
