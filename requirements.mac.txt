@@ -19,3 +19,4 @@ Werkzeug>=2.0.1
 opencv-python
 scikit-image
 opencv-rolling-ball
+customtkinter==4.6.3

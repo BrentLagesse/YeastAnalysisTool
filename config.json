@@ -1,0 +1,10 @@
+{
+    "kernel_size": 13,
+    "kernel_diviation": 5,
+    "mCherry_line_width": 1,
+    "useChache": "on",
+    "mCherry_to_find_pairs": "on",
+    "drop_ignore": "off",
+    "arrested": "Metaphase Arrested",
+    "img_format": "tiff"
+}
