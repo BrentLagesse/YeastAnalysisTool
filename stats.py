@@ -33,20 +33,19 @@ def threshold_image(image):
 def find_contours(image):
     contours, h = cv2.findContours(image, 1, 2)
     return contours
-def get_stats(cp, conf):
-    global cp1
+
+def intialize(cp, conf):
+    global cp1, input_dir, output_dir, mcherry_line_width_input, kernel_deviation_input
+    global contours, contours1, contours_mcherry, edit_testimg, contours_gfp, edit_GFP_img
+    global edit_im, edit_im_GFP, orig_gray_GFP_no_bg, orig_gray_mcherry_no_bg
     cp1 = cp
     data = conf
     print(data)
-    global input_dir
     input_dir = data['input_dir']
-    global output_dir
     output_dir = data['output_dir']
     kernel_size_input = data['kernel_size']
-    global mcherry_line_width_input
     mcherry_line_width_input = data['mCherry_line_width']
     kernel_deviation_input = data['kernel_diviation']
-    choice_var = data['arrested']
 
     # outlines screw up the analysis
     im_cherry = load_image(f'{output_dir}/segmented/{cp1.get_mCherry(use_id=True, outline=False)}')
@@ -71,6 +70,7 @@ def get_stats(cp, conf):
     thresh_mcherry = threshold_image(gray_mcherry)
     global gray
     gray = blur_image(orig_gray, kernel_size_input, kernel_deviation_input)
+    print("gray test", gray)
     thresh = threshold_image(gray) 
 
     gray_gfp = cv2.GaussianBlur(orig_GFP_gray, (3, 3), 1)
@@ -112,67 +112,76 @@ def get_stats(cp, conf):
     edit_im_GFP = load_image(f'{output_dir}/segmented/{cp1.get_GFP(use_id=True)}')
     edit_testimg = np.array(edit_im)
     edit_GFP_img = np.array(edit_im_GFP)
-    bestContours = []
-    best_contour = None
-    bestContours1 = []
-    best_contour1 = None
+
+def get_stats(cp, conf):
+    intialize(cp, conf)
     bestContours, mcherry_line_pts, best_contour = calculate_bestContours(contours, contours_mcherry, edit_testimg, 'mCherry')
     bestContours1, gfp_line_pts, best_contour1 = calculate_bestContours(contours1, contours_gfp, edit_GFP_img, 'gfp')
-
     print("test123123", bestContours1, bestContours)
+
+    intensity_sum = find_intensity_sum(bestContours, best_contour)
+    cell_intensity_sum = find_cell_intensity_sum()
+    mcherry_edit_image, mcherry_line_intensity_sum = find_mcherry_line_GFP_intensity(bestContours, mcherry_line_pts, best_contour)
+    gfp_edit_im_image, GFP_line_intensity_sum = find_GFP_line_GFP_intensity(bestContours1, gfp_line_pts, best_contour1)
+
+    return mcherry_edit_image, gfp_edit_im_image, intensity_sum, cell_intensity_sum, mcherry_distance, mcherry_count, gfp_distance, gfp_count, mcherry_line_intensity_sum, GFP_line_intensity_sum
+
+
+def find_mcherry_line_GFP_intensity(bestContours, mcherry_line_pts, best_contour):
     if bestContours == 0:
-        return edit_im, edit_im_GFP
-
-    if bestContours1 == 0:
-        return edit_im, edit_im_GFP
-
-
-    if len(bestContours) == 1:	
+        return edit_im, 0
+    elif len(bestContours) == 1:	
         best_contour = contours[bestContours[0]]
     print("only 1 contour found")
-    cv2.drawContours(edit_testimg, [best_contour], 0, (0, 255, 0), 1)	
+    cv2.drawContours(edit_testimg, [best_contour], 0, (0, 255, 0), 1)
+    mcherry_line_intensity_sum = sum(
+        orig_gray_mcherry_no_bg[p[0]][p[1]] for p in mcherry_line_pts
+    )
+    # cp1.set_mcherry_line_GFP_intensity(mcherry_line_intensity_sum)
+
+
+    return Image.fromarray(edit_testimg), mcherry_line_intensity_sum
+
+def find_GFP_line_GFP_intensity(bestContours1, gfp_line_pts, best_contour1):
+    if bestContours1 == 0:
+        return edit_im_GFP, 0
 
     if len(bestContours1) == 1:	
-        best_contour1 = contours[bestContours[0]]
+        best_contour1 = contours[bestContours1[0]]
     print("only 1 contour found")
     cv2.drawContours(edit_GFP_img, [best_contour1], 0, (0, 255, 0), 1)	
 
+    GFP_line_intensity_sum = sum(
+        orig_gray_GFP_no_bg[p[0]][p[1]] for p in gfp_line_pts
+    )
+   
 
+    return Image.fromarray(edit_GFP_img), GFP_line_intensity_sum
+
+def find_intensity_sum(bestContours, best_contour):
+    if bestContours == 0:
+        return edit_im
+    elif len(bestContours) == 1:	
+        best_contour = contours[bestContours[0]]
+    
     mask_contour = np.zeros(gray.shape, np.uint8)
-    cell_mask = np.zeros(gray.shape, np.uint8)
-
-
     cv2.fillPoly(mask_contour, [best_contour], 255)
-
+    print("mask_contour", mask_contour)
+    pts_contour = np.transpose(np.nonzero(mask_contour))
+    print("pts_contour", pts_contour)
+    intensity_sum = sum(orig_gray_GFP_no_bg[p[0]][p[1]] for p in pts_contour)
+    # cp1.set_GFP_Nucleus_Intensity(
+    #     main.Contour.CONTOUR, intensity_sum, len(pts_contour))
+    return intensity_sum
+    
+    
+def find_cell_intensity_sum():
     # read in the outline file if you need it
     border_cells = []
     with open(f'{output_dir}/masks/{cp1.get_base_name()}-{str(cp1.id)}.outline', 'r') as csvfile:
         csvreader = csv.reader(csvfile)
         border_cells.extend([int(row[0]), int(row[1])] for row in csvreader)
-    # cell_list = np.array(border_cells).reshape((-1, 1, 2)).astype(np.int32)
-    # cv2.fillPoly(cell_mask, [cell_ctr], 255)
-
-    pts_contour = np.transpose(np.nonzero(mask_contour))
-
-    intensity_sum = sum(orig_gray_GFP_no_bg[p[0]][p[1]] for p in pts_contour)
-    cp1.set_GFP_Nucleus_Intensity(
-        main.Contour.CONTOUR, intensity_sum, len(pts_contour))
-
-    cell_intensity_sum = sum(
-        orig_gray_GFP_no_bg[p[0]][p[1]] for p in border_cells)
-    cp1.set_GFP_Cell_Intensity(cell_intensity_sum, len(border_cells))
-
-    mcherry_line_intensity_sum = sum(
-        orig_gray_mcherry_no_bg[p[0]][p[1]] for p in mcherry_line_pts
-    )
-    cp1.set_mcherry_line_GFP_intensity(mcherry_line_intensity_sum)
-
-    GFP_line_intensity_sum = sum(
-        orig_gray_GFP_no_bg[p[0]][p[1]] for p in gfp_line_pts
-    )
-    cp1.set_GFP_line_GFP_intensity(GFP_line_intensity_sum)
-
-    return Image.fromarray(edit_testimg), Image.fromarray(edit_GFP_img)
+    return sum(orig_gray_GFP_no_bg[p[0]][p[1]] for p in border_cells)
 
 def get_best_contours(contours):
     bestContours = []
@@ -281,16 +290,19 @@ def find_best_contours(c1, c2):
     return np.array(result).reshape((-1, 1, 2)).astype(np.int32)
 
 def get_mcherry_line_pts(M1, M2, type, edit_testimg):
+    global mcherry_distance, mcherry_count, gfp_distance, gfp_count
+    mcherry_distance, mcherry_count, gfp_distance, gfp_count = 0, 0, 0, 0
+    print("typr", type)
     c1x, c1y = services.getMoments(M1)
     c2x, c2y = services.getMoments(M2)
     d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
     # print ('Distance: ' + str(d))
     if type == 'mCherry':
-        cp1.set_red_dot_distance(d)
-        cp1.set_red_dot_count(2)
+        mcherry_distance = d
+        mcherry_count = 2
     else:
-        cp1.set_gfp_red_dot_distance(d)
-        cp1.set_gfp_dot_count(2)
+        gfp_distance = d
+        gfp_count = 2
     draw_circle_line(edit_testimg, c1x, c1y, c2x, c2y)
     mcherry_line_mask = np.zeros(gray.shape, np.uint8)
     draw_circle_line(mcherry_line_mask, c1x, c1y, c2x, c2y)

@@ -317,7 +317,7 @@ def display_cell(image, id):
     cell_size_y = int(0.23 * main_size_x)
 
     # DIC Image
-    im_cherry, im_gfp = stats.get_stats(cp, data)
+    im_cherry, im_gfp, intensity_sum, cell_intensity_sum, mcherry_distance, mcherry_count, gfp_distance, gfp_count, mcherry_line_intensity_sum, GFP_line_intensity_sum = stats.get_stats(cp, data)
     if img_format == 'tiff':
         im = Image.open(f'{output_dir}/segmented/{cp.get_DIC()}')
     else:
@@ -364,40 +364,40 @@ def display_cell(image, id):
 
     nuclei_count = 0
     dist_mcherry = customtkinter.CTkLabel(window)
-    dist_mcherry.configure(text="Distance: {:.3f}".format(cp.red_dot_distance))
+    dist_mcherry.configure(text="Distance: {:.3f}".format(mcherry_distance))
     # rad3.grid(row=6, column=3)
     # rad4.grid(row=7, column=3)
     dist_mcherry.grid(row=7, column=3)
 
     intensity_mcherry_lbl = customtkinter.CTkLabel(window)
     intensity_mcherry_lbl.configure(
-        text=f"Line GFP intensity: {cp.get_mcherry_line_GFP_intensity()}"
+        text=f"Line GFP intensity: {mcherry_line_intensity_sum}"
     )
     intensity_mcherry_lbl.grid(row=8, column=3)
 
     red_dot_count_diplay = customtkinter.CTkLabel(window)
-    red_dot_count_diplay.configure(text=f"red dot count:{cp.get_red_dot_count()}")
+    red_dot_count_diplay.configure(text=f"red dot count:{mcherry_count}")
     red_dot_count_diplay.grid(row=9, column=3)
 
     try:
         intense1 = customtkinter.CTkLabel(window)
         intense1.configure(
-            text=f"Nucleus Intensity Sum: {cp.nucleus_intensity[Contour.CONTOUR]}"
+            text=f"Nucleus Intensity Sum: {intensity_sum}"
         )
         intense2 = customtkinter.CTkLabel(window)
-        intense2.configure(text=f"Cellular Intensity Sum: {cp.cell_intensity}")
+        intense2.configure(text=f"Cellular Intensity Sum: {cell_intensity_sum}")
         intense3 = customtkinter.CTkLabel(window)
         intense3.configure(
-            text=f"Line GFP intensity: {cp.get_GFP_line_GFP_intensity()}"
+            text=f"Line GFP intensity: {GFP_line_intensity_sum}"
         )
         dist_gfp = customtkinter.CTkLabel(window)
-        dist_gfp.configure(text="GFP Distance: {:.3f}".format(cp.gfp_red_dot_distance))
+        dist_gfp.configure(text="GFP Distance: {:.3f}".format(gfp_distance))
         dist_gfp.grid(row=7, column=5)
         intense1.grid(row=7, column=4)
         intense2.grid(row=8, column=4)
         intense3.grid(row=8, column=5)
         gfp_dot_count_diplay = customtkinter.CTkLabel(window)
-        gfp_dot_count_diplay.configure(text=f"gfp count:{cp.get_gfp_dot_count()}")
+        gfp_dot_count_diplay.configure(text=f"gfp count:{gfp_count}")
         gfp_dot_count_diplay.grid(row=9, column=5)
 
     except Exception:
