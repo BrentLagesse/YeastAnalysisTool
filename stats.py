@@ -115,8 +115,8 @@ def intialize(cp, conf):
 
 def get_stats(cp, conf):
     intialize(cp, conf)
-    bestContours, mcherry_line_pts, best_contour = calculate_bestContours(contours, contours_mcherry, edit_testimg, 'mCherry')
-    bestContours1, gfp_line_pts, best_contour1 = calculate_bestContours(contours1, contours_gfp, edit_GFP_img, 'gfp')
+    bestContours, mcherry_line_pts, best_contour, mcherry_distance, mcherry_count = calculate_bestContours(contours, contours_mcherry, edit_testimg, 'mCherry')
+    bestContours1, gfp_line_pts, best_contour1, gfp_distance, gfp_count = calculate_bestContours(contours1, contours_gfp, edit_GFP_img, 'gfp')
     print("test123123", bestContours1, bestContours)
 
     intensity_sum = find_intensity_sum(bestContours, best_contour)
@@ -213,10 +213,11 @@ def get_best_contours(contours):
 def calculate_bestContours(contours, contours_mcherry, edit_testimg, type):
     best_contour = []
     bestContours, bestArea = get_best_contours(contours)
-
+    distance = 0
+    count = 0
     if not bestContours:
         print("we didn't find any contours")
-        return 0,0,0
+        return 0,0,0,0,0
 
     bestContours_mcherry, bestArea_mcherry = get_best_contours(contours_mcherry[0])
 
@@ -232,7 +233,7 @@ def calculate_bestContours(contours, contours_mcherry, edit_testimg, type):
             # plt.imshow(edit_testimg,  cmap='gray')
             # plt.show()
         else:
-            mcherry_line_pts = get_mcherry_line_pts(
+            mcherry_line_pts, distance, count = get_mcherry_line_pts(
                 M1, M2, type, edit_testimg
             )
     if len(bestContours) == 2:  # "There can be only one!" - Connor MacLeod
@@ -241,7 +242,7 @@ def calculate_bestContours(contours, contours_mcherry, edit_testimg, type):
         MERGE_CLOSEST = True
         if MERGE_CLOSEST:   # find the two closest points and just push c2 into c1 there
             best_contour = find_best_contours(c1, c2)
-    return bestContours, mcherry_line_pts, best_contour
+    return bestContours, mcherry_line_pts, best_contour, distance, count
 
 def find_best_contours(c1, c2):
     smallest_distance = 999999999
@@ -292,7 +293,7 @@ def find_best_contours(c1, c2):
 def get_mcherry_line_pts(M1, M2, type, edit_testimg):
     global mcherry_distance, mcherry_count, gfp_distance, gfp_count
     mcherry_distance, mcherry_count, gfp_distance, gfp_count = 0, 0, 0, 0
-    print("typr", type)
+    print("type", type)
     c1x, c1y = services.getMoments(M1)
     c2x, c2y = services.getMoments(M2)
     d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))
@@ -306,7 +307,7 @@ def get_mcherry_line_pts(M1, M2, type, edit_testimg):
     draw_circle_line(edit_testimg, c1x, c1y, c2x, c2y)
     mcherry_line_mask = np.zeros(gray.shape, np.uint8)
     draw_circle_line(mcherry_line_mask, c1x, c1y, c2x, c2y)
-    return np.transpose(np.nonzero(mcherry_line_mask))
+    return np.transpose(np.nonzero(mcherry_line_mask)), d, 2
 
 def best_area_contours(arg0, area, arg2, i):
     arg0[1] = arg0[0]
