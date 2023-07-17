@@ -70,7 +70,7 @@ def intialize(cp, conf):
     thresh_mcherry = threshold_image(gray_mcherry)
     global gray
     gray = blur_image(orig_gray, kernel_size_input, kernel_deviation_input)
-    print("gray test", gray)
+    #print("gray test", gray)
     thresh = threshold_image(gray) 
 
     gray_gfp = cv2.GaussianBlur(orig_GFP_gray, (3, 3), 1)
@@ -117,7 +117,7 @@ def get_stats(cp, conf):
     intialize(cp, conf)
     bestContours, mcherry_line_pts, best_contour, mcherry_distance, mcherry_count = calculate_bestContours(contours, contours_mcherry, edit_testimg, 'mCherry')
     bestContours1, gfp_line_pts, best_contour1, gfp_distance, gfp_count = calculate_bestContours(contours1, contours_gfp, edit_GFP_img, 'gfp')
-    print("test123123", bestContours1, bestContours)
+    #print("test123123", bestContours1, bestContours)
 
     intensity_sum = find_intensity_sum(bestContours, best_contour)
     cell_intensity_sum = find_cell_intensity_sum()
@@ -132,7 +132,7 @@ def find_mcherry_line_GFP_intensity(bestContours, mcherry_line_pts, best_contour
         return edit_im, 0
     elif len(bestContours) == 1:	
         best_contour = contours[bestContours[0]]
-    print("only 1 contour found")
+    #print("only 1 contour found")
     cv2.drawContours(edit_testimg, [best_contour], 0, (0, 255, 0), 1)
     mcherry_line_intensity_sum = sum(
         orig_gray_mcherry_no_bg[p[0]][p[1]] for p in mcherry_line_pts
@@ -148,7 +148,7 @@ def find_GFP_line_GFP_intensity(bestContours1, gfp_line_pts, best_contour1):
 
     if len(bestContours1) == 1:	
         best_contour1 = contours[bestContours1[0]]
-    print("only 1 contour found")
+    #print("only 1 contour found")
     cv2.drawContours(edit_GFP_img, [best_contour1], 0, (0, 255, 0), 1)	
 
     GFP_line_intensity_sum = sum(
@@ -166,9 +166,9 @@ def find_intensity_sum(bestContours, best_contour):
     
     mask_contour = np.zeros(gray.shape, np.uint8)
     cv2.fillPoly(mask_contour, [best_contour], 255)
-    print("mask_contour", mask_contour)
+    #print("mask_contour", mask_contour)
     pts_contour = np.transpose(np.nonzero(mask_contour))
-    print("pts_contour", pts_contour)
+    #print("pts_contour", pts_contour)
     intensity_sum = sum(orig_gray_GFP_no_bg[p[0]][p[1]] for p in pts_contour)
     # cp1.set_GFP_Nucleus_Intensity(
     #     main.Contour.CONTOUR, intensity_sum, len(pts_contour))
@@ -216,7 +216,7 @@ def calculate_bestContours(contours, contours_mcherry, edit_testimg, type):
     distance = 0
     count = 0
     if not bestContours:
-        print("we didn't find any contours")
+        #print("we didn't find any contours")
         return 0,0,0,0,0
 
     bestContours_mcherry, bestArea_mcherry = get_best_contours(contours_mcherry[0])
@@ -293,7 +293,7 @@ def find_best_contours(c1, c2):
 def get_mcherry_line_pts(M1, M2, type, edit_testimg):
     global mcherry_distance, mcherry_count, gfp_distance, gfp_count
     mcherry_distance, mcherry_count, gfp_distance, gfp_count = 0, 0, 0, 0
-    print("type", type)
+ #   print("type", type)
     c1x, c1y = services.getMoments(M1)
     c2x, c2y = services.getMoments(M2)
     d = math.sqrt(pow(c1x - c2x, 2) + pow(c1y - c2y, 2))

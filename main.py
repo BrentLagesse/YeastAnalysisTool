@@ -42,7 +42,7 @@ class CellPair:
     def __init__(self, image_name, id):
         self.is_correct = True
         self.image_name = image_name
-        print("Image name", image_name)
+   #     print("Image name", image_name)
         self.id = id
         self.nuclei_count = 1
         self.red_dot_count = 1
@@ -79,7 +79,7 @@ class CellPair:
         return self.gfp_dot_count
 
     def get_base_name(self):
-        print("imagetest:", self.image_name)
+       # print("imagetest:", self.image_name)
         if img_format == "tiff":
             return self.image_name.split('_R3D_REF')[0]
         else:
@@ -293,8 +293,8 @@ def display_cell(image, id):
 
     win_width = window.winfo_width()
     win_height = window.winfo_height()
-    print("image123", image)
-    print("image_dict123", image_dict)
+   # print("image123", image)
+   # print("image_dict123", image_dict)
     max_id = len(image_dict[image])
     if max_id == 0:
         print('No cells found in this image')
@@ -305,9 +305,9 @@ def display_cell(image, id):
         id = 1
     ID_label.configure(text=f'Cell ID:  {str(id)}')
     img_title_label.configure(text=image)
-    print("displayImagename", image, cp_dict)
+ #   print("displayImagename", image, cp_dict)
     cp = cp_dict.get((image, id))
-    print("cp123", cp)
+ #   print("cp123", cp)
     if cp is None:
         cp = CellPair(image, id)
         cp_dict[(image, id)] = cp
@@ -454,7 +454,7 @@ def resize_image(image, size_x, size_y, img_format):
 def tink(conf, window1):
     global data
     data = conf
-    print(data)
+    #print(data)
     global window
     window = window1
 
@@ -577,10 +577,10 @@ def tink(conf, window1):
     use_spc110_var = use_spc110.get()
     global image_dict
     image_dict = segment_images.segment_images(data, use_cache_var, use_spc110_var)
-    print("test_dict", image_dict)
+   # print("test_dict", image_dict)
     if len(image_dict) > 0:
         k, v = list(image_dict.items())[0]
-        print("displaycell", k, v[0])
+       # print("displaycell", k, v[0])
         display_cell(k, v[0])
     window.mainloop()
 
