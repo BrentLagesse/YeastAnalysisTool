@@ -447,7 +447,7 @@ def resize_image(image, size_x, size_y, img_format):
         scale = float(height) / float(width)
         x_scaled = size_x
         y_scaled = int(scale * size_y)
-    im = image.resize((x_scaled, y_scaled), Image.ANTIALIAS)
+    im = image.resize((x_scaled, y_scaled), Image.LANCZOS)
     return ImageTk.PhotoImage(im)
 
 
