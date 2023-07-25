@@ -59,6 +59,18 @@ class CellPair:
         self.ignored = False
         self.mcherry_line_gfp_intensity = 0
         self.gfp_line_gfp_intensity = 0
+        self.properties = dict()
+
+        # TODO:  A generic "properties" dict is a much more extensible way of doing this rather than hardcoding what properties a cell can have.   I'm working on transitioning to this, but also need to get working code out to Sarah
+
+    def set_property(self, name, value):
+        self.properties[name] = value
+
+    def get_property(self, name):
+        return self.properties.get(name)
+
+    def get_all_properties(self):
+        return self.properties
 
     def set_red_dot_distance(self, d):
         self.red_dot_distance = d

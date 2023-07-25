@@ -124,6 +124,15 @@ def get_stats(cp, conf):
     mcherry_edit_image, mcherry_line_intensity_sum = find_mcherry_line_GFP_intensity(bestContours, mcherry_line_pts, best_contour)
     gfp_edit_im_image, GFP_line_intensity_sum = find_GFP_line_GFP_intensity(bestContours1, gfp_line_pts, best_contour1)
 
+    cp.red_dot_distance = mcherry_distance
+    cp.red_dot_count = mcherry_count
+    cp.gfp_distance = gfp_distance
+    cp.gfp_line_gfp_intensity = GFP_line_intensity_sum
+    cp.mcherry_line_gfp_intensity = mcherry_line_intensity_sum
+    #cp.set_GFP_Cell_Intensity(main.Contour.CONTOUR, intensity_sum, intensity_pts)
+    cp.nucleus_intensity[main.Contour.CONTOUR] = intensity_sum
+    cp.cell_intensity = cell_intensity_sum
+
     return mcherry_edit_image, gfp_edit_im_image, intensity_sum, cell_intensity_sum, mcherry_distance, mcherry_count, gfp_distance, gfp_count, mcherry_line_intensity_sum, GFP_line_intensity_sum
 
 
@@ -160,7 +169,7 @@ def find_GFP_line_GFP_intensity(bestContours1, gfp_line_pts, best_contour1):
 
 def find_intensity_sum(bestContours, best_contour):
     if bestContours == 0:
-        return edit_im
+        return edit_im   # TODO:  Why is this returning an image?
     elif len(bestContours) == 1:	
         best_contour = contours[bestContours[0]]
     
