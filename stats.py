@@ -133,6 +133,19 @@ def get_stats(cp, conf):
     cp.nucleus_intensity[main.Contour.CONTOUR] = intensity_sum
     cp.cell_intensity = cell_intensity_sum
 
+    cp.set_property('mcherry_distance', mcherry_distance)
+    cp.set_property('mcherry_count', mcherry_count)
+    cp.set_property('gfp_distance', gfp_distance)
+    cp.set_property('gfp_intensity', GFP_line_intensity_sum)
+    cp.set_property('mcherry_intensity', mcherry_line_intensity_sum)
+    cp.set_property('nucleus_intensity', intensity_sum)
+    cp.set_property('cell_intensity', cell_intensity_sum)
+    cytoplasmic_intensity = cell_intensity_sum - intensity_sum
+    cp.set_property('cytoplasmic_intensity', cytoplasmic_intensity)
+    cp.set_property('nuc_cyto_ratio', float(intensity_sum) / float(cytoplasmic_intensity))
+
+
+
     return mcherry_edit_image, gfp_edit_im_image, intensity_sum, cell_intensity_sum, mcherry_distance, mcherry_count, gfp_distance, gfp_count, mcherry_line_intensity_sum, GFP_line_intensity_sum
 
 
@@ -169,7 +182,8 @@ def find_GFP_line_GFP_intensity(bestContours1, gfp_line_pts, best_contour1):
 
 def find_intensity_sum(bestContours, best_contour):
     if bestContours == 0:
-        return edit_im   # TODO:  Why is this returning an image?
+        #return edit_im   # TODO:  Why is this returning an image?
+        return 0
     elif len(bestContours) == 1:	
         best_contour = contours[bestContours[0]]
     

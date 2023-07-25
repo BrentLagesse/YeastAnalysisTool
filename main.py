@@ -42,7 +42,6 @@ class CellPair:
     def __init__(self, image_name, id):
         self.is_correct = True
         self.image_name = image_name
-   #     print("Image name", image_name)
         self.id = id
         self.nuclei_count = 1
         self.red_dot_count = 1
