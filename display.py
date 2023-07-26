@@ -15,6 +15,7 @@ import os
 import pkgutil
 import sys
 import StatPlugin
+import stats
 
 input_dir = opt.input_directory
 output_dir = opt.output_directory
@@ -29,7 +30,7 @@ data['input_dir'] = input_dir
 data['output_dir'] = output_dir
 
 # dynamically load stat plugins
-stat_plugins = list()
+
 pluginpath = "./stats_plugins/"
 sys.path.append(pluginpath)
 modules = pkgutil.iter_modules(path=[pluginpath])
@@ -48,7 +49,7 @@ for loader, mod_name, ispkg in modules:
     instanceOfClass = loaded_class()
     if isinstance(instanceOfClass, StatPlugin.StatPlugin):
         print ('Added Plugin -- ' + mod_name)
-        stat_plugins.append(instanceOfClass)
+        stats.add_stat_plugins(instanceOfClass)
     else:
         print
         mod_name + " was not an instance of StatPlugin"

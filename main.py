@@ -63,7 +63,16 @@ class CellPair:
         # TODO:  A generic "properties" dict is a much more extensible way of doing this rather than hardcoding what properties a cell can have.   I'm working on transitioning to this, but also need to get working code out to Sarah
 
     def set_property(self, name, value):
+        if self.properties.get(name) is not None:
+            print ('WARNING -- overriding an existing property in image - ' + self.image_name + ' - cell id - ' + str(self.id))
         self.properties[name] = value
+
+    def set_properties(self, prop_dict):
+        for k,v in prop_dict.items():
+            if self.properties.get(k) is not None:
+                print('WARNING -- overriding an existing property in image - ' + self.image_name + ' - cell id - ' + str(self.id))
+            self.properties[k] = v
+
 
     def get_property(self, name):
         return self.properties.get(name)

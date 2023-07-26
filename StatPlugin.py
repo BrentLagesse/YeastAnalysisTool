@@ -13,3 +13,9 @@ class StatPlugin(object):
     @abstractmethod
     def return_stats(self, data):
         return dict()
+
+    # helps the GUI decide where to display the stats
+    #  if None, the the stats don't get displayed on the GUI
+    @abstractmethod
+    def where_to_diplay(self):
+        return None
