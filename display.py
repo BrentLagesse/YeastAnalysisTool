@@ -12,6 +12,9 @@ import opts as opt
 import json
 import main
 import os
+import pkgutil
+import sys
+import StatPlugin
 
 input_dir = opt.input_directory
 output_dir = opt.output_directory
@@ -25,6 +28,30 @@ data = json.load(configure_file)
 data['input_dir'] = input_dir
 data['output_dir'] = output_dir
 
+# dynamically load stat plugins
+stat_plugins = list()
+pluginpath = "./stats_plugins/"
+sys.path.append(pluginpath)
+modules = pkgutil.iter_modules(path=[pluginpath])
+for loader, mod_name, ispkg in modules:
+    # Ensure that module isn't already loaded
+    loaded_mod = None
+    if mod_name not in sys.modules:
+        # Import module
+        loaded_mod = __import__(mod_name, fromlist=[mod_name])
+
+    # Load class from imported module
+    class_name = mod_name
+    if loaded_mod is None:
+        continue
+    loaded_class = getattr(loaded_mod, class_name)
+    instanceOfClass = loaded_class()
+    if isinstance(instanceOfClass, StatPlugin.StatPlugin):
+        print ('Added Plugin -- ' + mod_name)
+        stat_plugins.append(instanceOfClass)
+    else:
+        print
+        mod_name + " was not an instance of StatPlugin"
 
 def on_resize(event):
     try:
