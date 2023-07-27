@@ -11,6 +11,11 @@ import services
 import main
 
 global data
+stat_plugins = list()
+
+def add_stat_plugins(plugin):
+    stat_plugins.append(plugin)
+
 
 def load_image(image_path):
     return Image.open(image_path)
@@ -114,6 +119,7 @@ def intialize(cp, conf):
     edit_GFP_img = np.array(edit_im_GFP)
 
 def get_stats(cp, conf):
+    #TODO:  Replace this code with a plugable processing system
     intialize(cp, conf)
     bestContours, mcherry_line_pts, best_contour, mcherry_distance, mcherry_count = calculate_bestContours(contours, contours_mcherry, edit_testimg, 'mCherry')
     bestContours1, gfp_line_pts, best_contour1, gfp_distance, gfp_count = calculate_bestContours(contours1, contours_gfp, edit_GFP_img, 'gfp')
@@ -133,17 +139,39 @@ def get_stats(cp, conf):
     cp.nucleus_intensity[main.Contour.CONTOUR] = intensity_sum
     cp.cell_intensity = cell_intensity_sum
 
-    cp.set_property('mcherry_distance', mcherry_distance)
-    cp.set_property('mcherry_count', mcherry_count)
+
     cp.set_property('gfp_distance', gfp_distance)
     cp.set_property('gfp_intensity', GFP_line_intensity_sum)
-    cp.set_property('mcherry_intensity', mcherry_line_intensity_sum)
+
     cp.set_property('nucleus_intensity', intensity_sum)
     cp.set_property('cell_intensity', cell_intensity_sum)
     cytoplasmic_intensity = cell_intensity_sum - intensity_sum
     cp.set_property('cytoplasmic_intensity', cytoplasmic_intensity)
     cp.set_property('nuc_cyto_ratio', float(intensity_sum) / float(cytoplasmic_intensity))
 
+
+#TODO: This is going to replace the hard coded stats above
+    for stat in stat_plugins:
+        if not stat.ENABLED:
+            continue
+        #TODO: figure out if we have the data
+        # NOTE:  hardcoded for now
+        data_for_plugin = dict()
+        # Remove later
+        data_for_plugin['contours'] = contours
+        data_for_plugin['contours_mcherry'] = contours_mcherry
+        data_for_plugin['countours1'] = contours1
+        data_for_plugin['contours_gfp'] = contours_gfp
+        data_for_plugin['edit_testimg'] = edit_testimg
+        data_for_plugin['orig_gray_mcherry_no_bg'] = orig_gray_mcherry_no_bg
+        for request in stat.required_data():
+            if data_for_plugin.get(request) is None:
+                pass  # TODO:  Identify the analysis that can provide this and run it
+        # at this point we know we have all the required data processed
+        # run the stats
+        new_stats = stat.return_stats(data_for_plugin)
+        # add the stats to our cellpair
+        cp.set_properties(new_stats)
 
 
     return mcherry_edit_image, gfp_edit_im_image, intensity_sum, cell_intensity_sum, mcherry_distance, mcherry_count, gfp_distance, gfp_count, mcherry_line_intensity_sum, GFP_line_intensity_sum
