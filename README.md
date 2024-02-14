@@ -2,6 +2,8 @@
 
 You need to make sure git, virtualenv, and python3 are installed and are in the $PATH (you can type those command names on the commandline and your computer finds them).
 
+Note that I have mostly used python 3.9.6 for mac.  It seems that 3.12.2 may be causing problems with the dependencies.
+
 
 
 For usage on a Mac, do the following in a terminal.
