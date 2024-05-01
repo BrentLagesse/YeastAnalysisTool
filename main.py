@@ -325,9 +325,29 @@ def display_cell(image, id):
         id = 1
     ID_label.configure(text=f'Cell ID:  {str(id)}')
     img_title_label.configure(text=image)
- #   print("displayImagename", image, cp_dict)
+    # print("displayImagename", image, cp_dict)
     cp = cp_dict.get((image, id))
- #   print("cp123", cp)
+    if cp is not None:
+        print(cp.get_all_properties())
+        print("id", cp.id)
+        print("nuclei_count", cp.nuclei_count ) 
+        print("red_dot_count", cp.red_dot_count )
+        print("gfp_dot_count", cp.gfp_dot_count )
+        print("red_dot_distance", cp.red_dot_distance)
+        print("gfp_red_dot_distance", cp.gfp_red_dot_distance)
+        print("cyan_dot_count",cp.cyan_dot_count)
+        print("green_dot_count", cp.green_dot_count)
+        print("ground_truth",cp.ground_truth)
+        print("nucleus_intensity", cp.nucleus_intensity)
+        print("nucleus_total_points", cp.nucleus_total_points)
+        print("cell_intensity", cp.cell_intensity)
+        print("cell_total_points", cp.cell_total_points)
+        print('ignored', cp.ignored)
+        print('mcherry_line_gfp_intensity ',cp.mcherry_line_gfp_intensity )
+        print('gfp_line_gfp_intensity ' ,cp.gfp_line_gfp_intensity )
+        # for key, value in cp:
+        #     print(key, ':', get)
+        #   print("cp123", cp)
     if cp is None:
         cp = CellPair(image, id)
         cp_dict[(image, id)] = cp
@@ -597,10 +617,17 @@ def tink(conf, window1):
     use_spc110_var = use_spc110.get()
     global image_dict
     image_dict = segment_images.segment_images(data, use_cache_var, use_spc110_var)
-   # print("test_dict", image_dict)
+    print("test_dict", image_dict)
+    # test_dict {'20_1212_M1914_001_R3D_REF.tif': [1, 2, 3, 4, 5, 6, 7], '20_1212_M1914_002_R3D_REF.tif': [1, 2, 3, 4], '20_1212_M1914_003_R3D_REF.tif': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
     if len(image_dict) > 0:
+        # brings first image and value in test_dict. shows changes only in 1-7 and changes when clicking next image
         k, v = list(image_dict.items())[0]
-       # print("displaycell", k, v[0])
+        # for x in image_dict:
+        #     print (x)
+        #     for y in image_dict[x]:
+        #         print (y,':',image_dict[x][y])
+        # displaycell 20_1212_M1914_001_R3D_REF.tif 1
+        # print("displaycell", k, v[0]) 
         display_cell(k, v[0])
     window.mainloop()
 

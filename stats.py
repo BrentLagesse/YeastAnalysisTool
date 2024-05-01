@@ -147,8 +147,11 @@ def get_stats(cp, conf):
     cp.set_property('cell_intensity', cell_intensity_sum)
     cytoplasmic_intensity = cell_intensity_sum - intensity_sum
     cp.set_property('cytoplasmic_intensity', cytoplasmic_intensity)
-    cp.set_property('nuc_cyto_ratio', float(intensity_sum) / float(cytoplasmic_intensity))
-
+    # ADAM CHHOR FOUND BUG
+    if cytoplasmic_intensity == 0:
+        cp.set_property('nuc_cyto_ratio', 0)
+    else:
+        cp.set_property('nuc_cyto_ratio', float(intensity_sum) / float(cytoplasmic_intensity))
 
 #TODO: This is going to replace the hard coded stats above
     for stat in stat_plugins:
@@ -229,9 +232,12 @@ def find_intensity_sum(bestContours, best_contour):
 def find_cell_intensity_sum():
     # read in the outline file if you need it
     border_cells = []
+    print("ADAM HERE IT IS")
+    # print(f'{output_dir}/masks/{cp1.get_base_name()}-{str(cp1.id)}.outline')
     with open(f'{output_dir}/masks/{cp1.get_base_name()}-{str(cp1.id)}.outline', 'r') as csvfile:
+        # print(csvfile.read())
         csvreader = csv.reader(csvfile)
-        border_cells.extend([int(row[0]), int(row[1])] for row in csvreader)
+        border_cells.extend([int(row[0]), int(row[1])] for row in csvreader if len(row) >= 2)
     return sum(orig_gray_GFP_no_bg[p[0]][p[1]] for p in border_cells)
 
 def get_best_contours(contours):
