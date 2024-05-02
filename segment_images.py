@@ -173,6 +173,7 @@ def segment_images(conf, use_cache, use_spc110):
         else:
 
             segmentation_name = f'{output_dir}masks/{image_name}'
+            print('seg_name =' + segmentation_name)
             # image_dict[image_name] = segmentation_name
             # Load the original raw image and rescale its intensity values
             if img_format == 'tiff':
@@ -195,7 +196,8 @@ def segment_images(conf, use_cache, use_spc110):
                 image = np.tile(image, 3)
 
             # Open the segmentation file    # TODO -- make it show it is choosing the correct segmented
-            seg = np.array(Image.open(segmentation_name))   #TODO:  on first run, this can't find outputs/masks/M***.tif'
+            seg = np.array(Image.open(segmentation_name)) # OG CODE 
+            # seg = np.array(Image.open(f'{output_dir}masks/20_1214_M1922_001_R3D_REF.tif'))   #TODO:  on first run, this can't find outputs/masks/M***.tif'
 
             # TODO:   If G1 Arrested, we don't want to merge neighbors and ignore non-budding cells
             # choices = ['Metaphase Arrested', 'G1 Arrested']
@@ -263,7 +265,7 @@ def segment_images(conf, use_cache, use_spc110):
                         mcherry_image = np.array(Image.open(mcherry_dir + mcherry_image_name))
                     else:
                         f = DVFile(input_dir + image_name)
-                        mcherry_image = f.asarray()[3]
+                        mcherry_image = f.asarray()[2] #ADAM CHANGED THIS FROM 3 to 2
 
                     mcherry_image = skimage.exposure.rescale_intensity(mcherry_image.astype(np.float32),
                                                                        out_range=(0, 1))
@@ -432,7 +434,8 @@ def segment_images(conf, use_cache, use_spc110):
         if img_format == 'tiff':
             base_image_name = image_name.split('_R3D_REF')[0]
         else:
-            base_image_name = image_name.split('_PRJ')[0]
+            # base_image_name = image_name.split('_R3D_REF')[0] # ADAM EDITED
+            base_image_name = image_name.split('_PRJ')[0] # OG CODE
         for images in os.listdir(input_dir):
             # don't overlay if it isn't the right base image
             if base_image_name not in images:
@@ -482,7 +485,9 @@ def segment_images(conf, use_cache, use_spc110):
 
             # Overlay the outlines on the original image in green
             image_outlined = image.copy()
-            image_outlined[outlines > 0] = (0, 255, 0)
+            print('image_outlined',image_outlined)
+            print('outlines', outlines)
+            # image_outlined[outlines > 0] = (0, 255, 0) # causes bug ADAM
 
             # Display the outline file
             fig = plt.figure(frameon=False)
