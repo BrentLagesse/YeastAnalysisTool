@@ -58,6 +58,7 @@ Having the same assumptions that Python(3.10) is installed in the machine
 Save the downloaded .h5 file to the “.\weights” directory created by running init.bat (for windows)
 Create output Folders within the YeastAnalysisTool folder, and create a folder:  “.\output\segmented”
 
+12. 
 !!! Important !!!<br/>
 If pulled a different branch other than ryota-main, code might not run and will need slight changes to run on windows. <br/>
 
@@ -73,3 +74,8 @@ Change to <br/>
 image.astype(np.float32)<br/>
 becomes,<br/>
 &emsp;np.float32(image)
+
+Additional Instructions
+1. Make sure the name of the file is [NAME OF THE PICTURE]_001_PRJ.dv
+2. due to different os, read the errors, it might not work out of the gate and need to edit some lines like the line above about fonts
+3. The code works about 70% of the time. Try with cache on and off
