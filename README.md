@@ -75,7 +75,20 @@ image.astype(np.float32)<br/>
 becomes,<br/>
 &emsp;np.float32(image)
 
-Additional Instructions
-1. Make sure the name of the file is [NAME OF THE PICTURE]_001_PRJ.dv
-2. due to different os, read the errors, it might not work out of the gate and need to edit some lines like the line above about fonts
-3. The code works about 70% of the time. Try with cache on and off
+## Additional Instructions
+1. Make sure the name of the file is [NAME OF THE PICTURE]_001_PRJ.dv and the input dir matches the name of all the file's [NAME OF THE PICTURE] Ex. M2067_001_PRJ.dv file would be inside a M2067 folder.
+2. The output dir location doesn't matter
+3. due to different os, read the errors, it might not work out of the gate and need to edit some lines like the line above about fonts
+4. The code works about 70% of the time. Try with cache on and off
+5. <b> Due to the machine learning part only works on certain versions of packages, we have to specifically use them <b> the easiest way do to do is to delete all your personal pip packages and reinstall them. Please follow instructions below
+
+```bash
+# puts all personal packages into deleteRequirements.txt
+1. pip freeze --all > deleteRequirements.txt
+# uninstalls all packages
+2. pip uninstall -r deleteRequirements.txt
+# installs repo's pip packages
+3. pip install -r ./requirements.txt --no-cache-dir
+#deletes temporary Requirements
+4. del deleteRequirements.txt
+```
