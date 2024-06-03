@@ -317,7 +317,7 @@ def segment_images():
                           preprocessed_image_list,
                           verbose=opt.verbose,
                           use_cache = use_cache.get())
-
+        print("ENDED PREPROCESS_IMAGES")
         if opt.verbose:
             print("\nRunning your images through the neural network...")
         predict_images(preprocessed_image_directory,
@@ -326,7 +326,9 @@ def segment_images():
                        rescale=opt.rescale,
                        scale_factor=opt.scale_factor,
                        verbose=opt.verbose)
+        print("ENDED PREDICT_images")
 
+        return
         if opt.save_masks == True:
             if opt.verbose:
                 print("\nSaving the masks...")
@@ -350,6 +352,7 @@ def segment_images():
                                  verbose=opt.verbose)
 
         os.remove(preprocessed_image_list)
+        print('after ifs')
 
         if not opt.save_preprocessed:
             shutil.rmtree(preprocessed_image_directory)
@@ -397,7 +400,7 @@ def segment_images():
             f = DVFile(input_dir + image_name)
             im = f.asarray()
             image = Image.fromarray(im[0])
-            #image = np.float32(image)
+            #image = np.float32(image))
             image = skimage.exposure.rescale_intensity(np.float32(image), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
@@ -489,7 +492,7 @@ def segment_images():
                     f = DVFile(input_dir + image_name)
                     mcherry_image = f.asarray()[3]
 
-                    mcherry_image = skimage.exposure.rescale_intensity(mcherry_image.astype(np.float32), out_range=(0, 1))
+                    # mcherry_image = skimage.exposure.rescale_intensity(mcherry_np.float32(image), out_range=(0, 1))
                     mcherry_image = np.round(mcherry_image * 255).astype(np.uint8)
 
                     # Convert the image to an RGB image, if necessary
@@ -748,7 +751,7 @@ def segment_images():
             # if os.path.isdir(full_path):
             #     continue
             image = np.array(f.asarray()[image_num])
-            image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
+            image = skimage.exposure.rescale_intensity(np.float32(image), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)
 
             # Convert the image to an RGB image, if necessary
@@ -923,7 +926,7 @@ def display_cell(image, id):
         scale = float(height) / float(width)
         x_scaled = cell_size_x
         y_scaled = int(scale * cell_size_y)
-    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
+    im = im.resize((x_scaled, y_scaled), Image.LANCZOS)
     img = ImageTk.PhotoImage(im)
     DAPI_label.configure(image=img)
     DAPI_label.image = img
@@ -941,7 +944,7 @@ def display_cell(image, id):
         scale = float(height) / float(width)
         x_scaled = cell_size_x
         y_scaled = int(scale * cell_size_y)
-    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
+    im = im.resize((x_scaled, y_scaled), Image.LANCZOS)
     img = ImageTk.PhotoImage(im)
     mCherry_label.configure(image=img)
     mCherry_label.image = img
@@ -965,7 +968,7 @@ def display_cell(image, id):
     #     scale = float(height) / float(width)
     #     x_scaled = cell_size_x
     #     y_scaled = int(scale * cell_size_y)
-    # im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
+    # im = im.resize((x_scaled, y_scaled), Image.LANCZOS)
     #img = ImageTk.PhotoImage(im)
     #CFP_label.configure(image=img)
     #CFP_label.image = img
@@ -1005,7 +1008,7 @@ def display_cell(image, id):
         scale = float(height) / float(width)
         x_scaled = cell_size_x
         y_scaled = int(scale * cell_size_y)
-    im = im.resize((x_scaled, y_scaled), Image.ANTIALIAS)
+    im = im.resize((x_scaled, y_scaled), Image.LANCZOS)
     img = ImageTk.PhotoImage(im)
     GFP_label.configure(image=img)
     GFP_label.image = img
@@ -1223,19 +1226,19 @@ def tink(conf,window1):
     ID_label.grid(row=6, column=0)
 
     global DIC_label_text
-    DIC_label_text = customtkinter.CTkLabel(window, font=("Times New Roman", 18, "bold"))
+    DIC_label_text = customtkinter.CTkLabel(window)
     DIC_label_text.grid(row=5, column=1)
 
     global DAPI_label_text
-    DAPI_label_text = customtkinter.CTkLabel(window, fg_color='blue', font=("Times New Roman", 18, "bold"))
+    DAPI_label_text = customtkinter.CTkLabel(window, fg_color='blue' )
     DAPI_label_text.grid(row=5, column=2)
 
     global mCherry_label_text
-    mCherry_label_text = customtkinter.CTkLabel(window, fg_color='red', font=("Times New Roman", 18, "bold"))
+    mCherry_label_text = customtkinter.CTkLabel(window, fg_color='red' )
     mCherry_label_text.grid(row=5, column=3)
 
     global GFP_label_text
-    GFP_label_text = customtkinter.CTkLabel(window, fg_color='green', font=("Times New Roman", 18, "bold"))
+    GFP_label_text = customtkinter.CTkLabel(window, fg_color='green' )
     GFP_label_text.grid(row=5, column=4)
 
     global DIC_label

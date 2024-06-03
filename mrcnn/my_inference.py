@@ -86,7 +86,7 @@ def predict_images(test_path, sample_submission, outputfilename, rescale = False
     inference_config = BowlConfig()
     ROOT_DIR = os.getcwd()
     MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-
+    print(MODEL_DIR)
     output = open(outputfilename, "w")
     output.truncate()
     output.write("ImageId, EncodedPixels\n")

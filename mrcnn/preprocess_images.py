@@ -57,7 +57,7 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             width = image.shape[1]
 
             # Preprocessing operations
-            image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
+            image = skimage.exposure.rescale_intensity(np.float32(image), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)        #convert to 8 bit
             image = np.expand_dims(image, axis=-1)
             rgbimage = np.tile(image, 3)                          #convert to RGB
