@@ -62,7 +62,7 @@ Create output Folders within the YeastAnalysisTool folder, and create a folder: 
 
 12. 
 !!! Important !!!<br/>
-If pulled a different branch other than ryota-main, code might not run and will need slight changes to run on windows. <br/>
+Windows and Mac might have some conflicting issues, so follow the terminal and fix those issues. Some issues below for windows maybe: <br/>
 
 Change foreground parameters to fg_color<br/>
 Change text_font parameters to font<br/>
