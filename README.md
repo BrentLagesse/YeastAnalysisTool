@@ -2,6 +2,8 @@
 
 You need to make sure git, virtualenv, and python3 are installed and are in the $PATH (you can type those command names on the commandline and your computer finds them).
 
+Note that I have mostly used python 3.9.6 for mac.  It seems that 3.12.2 may be causing problems with the dependencies.
+
 
 
 For usage on a Mac, do the following in a terminal.
@@ -21,7 +23,7 @@ sh init.sh
 
 You can do this while the other script is still running -- Download this link https://drive.google.com/file/d/1moUKvWFYQoWg0z63F0JcSd3WaEPa4UY7/view?usp=sharing and put it in the weights directory the previous script just made.
 
-python3 main.py 
+python3 display.py 
 
 This starts the program.  Change the Input directory to one of your picture directories like M2210
 

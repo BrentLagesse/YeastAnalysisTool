@@ -47,8 +47,8 @@ def convert_to_image(rlefile, outputdirectory, preprocessed_image_list,
         file_string = image_list[list_index, 1]
 
         size = file_string.split(" ")
-        height = np.int(size[1])
-        width = np.int(size[2])
+        height = int(size[1])
+        width = int(size[2])
 
         new_height = height
         new_width = width

@@ -75,4 +75,3 @@ def export_to_csv_file(conf,window, image_dict1,cp_dict1, drop_ignored1):
                 line.append(cp.get_mcherry_line_GFP_intensity())
                 line.append(cp.get_ignored())   # check if the user has invalidated this sample
                 outfile_writer.writerow(line)
-
