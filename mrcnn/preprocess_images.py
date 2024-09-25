@@ -23,16 +23,20 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
     output = open(outputfile, "w")
     output.write("ImageId, EncodedRLE" + "\n")
     output.close()
-
     for imagename in os.listdir(inputdirectory):
-        if '_R3D_REF' not in imagename:
+        if '_PRJ' not in imagename:
             continue
         extspl = os.path.splitext(imagename)
         #check if there are .dv files and use them first
         image = 0
+        fsize = os.path.getsize(inputdirectory + imagename)
+        if fsize > 8230000:
+            #File is a live cell imaging that has more than 4 images
+            f = DVFile(inputdirectory + imagename)
+            image = f.asarray()[0]
         if extspl[1] == '.dv':
-            f = DVFile(inputdirectory + imagename)   #the REF image should have only 1 picture in the stack
-            image = f.asarray()
+            f = DVFile(inputdirectory + imagename)
+            image = f.asarray()[0]
 
         #if we don't have .dv files, see if there are tifs in the directory with the proper name structure
 
@@ -40,7 +44,6 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             continue
         else:
             image = np.array(Image.open(inputdirectory + imagename))
-
         try:
             if verbose:
                 print ("Preprocessing ", imagename)
@@ -54,7 +57,7 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             width = image.shape[1]
 
             # Preprocessing operations
-            image = skimage.exposure.rescale_intensity(image.astype(np.float32), out_range=(0, 1))
+            image = skimage.exposure.rescale_intensity(np.float32(image), out_range=(0, 1))
             image = np.round(image * 255).astype(np.uint8)        #convert to 8 bit
             image = np.expand_dims(image, axis=-1)
             rgbimage = np.tile(image, 3)                          #convert to RGB
@@ -72,6 +75,5 @@ def preprocess_images(inputdirectory, mask_dir, outputdirectory, outputfile, ver
             output.close()
         except IOError:
             pass
-
 
 

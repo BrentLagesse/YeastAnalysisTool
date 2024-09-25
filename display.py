@@ -8,14 +8,11 @@ from tkinter import *
 from tkinter import filedialog
 from tkinter.ttk import *
 
+
 import opts as opt
 import json
 import main
 import os
-import pkgutil
-import sys
-import StatPlugin
-import stats
 
 input_dir = opt.input_directory
 output_dir = opt.output_directory
@@ -29,36 +26,12 @@ data = json.load(configure_file)
 data['input_dir'] = input_dir
 data['output_dir'] = output_dir
 
-# dynamically load stat plugins
-
-pluginpath = "./stats_plugins/"
-sys.path.append(pluginpath)
-modules = pkgutil.iter_modules(path=[pluginpath])
-for loader, mod_name, ispkg in modules:
-    # Ensure that module isn't already loaded
-    loaded_mod = None
-    if mod_name not in sys.modules:
-        # Import module
-        loaded_mod = __import__(mod_name, fromlist=[mod_name])
-
-    # Load class from imported module
-    class_name = mod_name
-    if loaded_mod is None:
-        continue
-    loaded_class = getattr(loaded_mod, class_name)
-    instanceOfClass = loaded_class()
-    if isinstance(instanceOfClass, StatPlugin.StatPlugin):
-        print ('Added Plugin -- ' + mod_name)
-        stats.add_stat_plugins(instanceOfClass)
-    else:
-        print
-        mod_name + " was not an instance of StatPlugin"
 
 def on_resize(event):
     try:
         w = width
         h = height
-    except Exception:
+    except:
         return
 
 
@@ -112,7 +85,6 @@ def get_data():
     ignore_var.set(data['drop_ignore'])
     input_dir = data['input_dir']
     output_dir = data['output_dir']
-    img_format = data['img_format']
     output_lbl.configure(text=output_dir)
     input_lbl.configure(text=input_dir)
 
@@ -213,10 +185,6 @@ def optionmenu_callback(choice):
     print("optionmenu dropdown clicked:", choice)
     data['arrested'] = choice
 
-def img_optionmenu_callback(choice):
-    print("optionmenu dropdown clicked:", choice)
-    data['img_format'] = choice
-
 
 kernel_size_var = tkinter.StringVar(value=data['kernel_size'])
 mCherry_var = tkinter.StringVar(value=data['mCherry_line_width'])
@@ -225,9 +193,8 @@ kernel_deviation_var = tkinter.StringVar(value=data['kernel_diviation'])
 
 def configuration_window():
     global configure_window
-    configure_window = customtkinter.CTkToplevel(window)
-    configure_window.geometry("450x500")
-    configure_window.wm_transient(window)
+    configure_window = customtkinter.CTkToplevel()
+    configure_window.geometry("450x450")
 
     # input directory button
     input_btn = customtkinter.CTkButton(configure_window, text="Set Input Directory", command=set_input_directory)
@@ -244,7 +211,6 @@ def configuration_window():
     global output_lbl
     output_lbl = customtkinter.CTkLabel(configure_window, text=output_dir)
     output_lbl.grid(row=1, column=1, padx=10, pady=10)
-
 
     kernel_label = customtkinter.CTkLabel(master=configure_window, text="Kernel size", )
     kernel_label.grid(row=2, column=0, padx=10, pady=10, ipadx=0)
@@ -285,38 +251,29 @@ def configuration_window():
 
     # choice dropdown
     combobox = customtkinter.CTkComboBox(master=configure_window,
-                                          values=["Metaphase Arrested", "G1 Arrested"],
+                                         values=["Metaphase Arrested", "G1"],
                                          command=optionmenu_callback,
                                          variable=data['arrested'])
     combobox.grid(row=6, column=1, padx=10, pady=10)
 
-    image_format_label = customtkinter.CTkLabel(master=configure_window, text="Image Format", )
-    image_format_label.grid(row=7, column=0, padx=10, pady=10, ipadx=0)
-
-    image_format_input = customtkinter.CTkComboBox(master=configure_window,
-                                          values=["tiff", "DV"],
-                                         command=img_optionmenu_callback,
-                                         variable=data['img_format'])
-    image_format_input.grid(row=7, column=1, padx=10, pady=10)
-
     # My_configurations button
     my_btn = customtkinter.CTkButton(configure_window, text="Get my Configuration", command=my_configure,
                                      fg_color="green", hover=True)
-    my_btn.grid(row=8, column=0, padx=10, pady=10)
+    my_btn.grid(row=7, column=0, padx=10, pady=10)
 
     # set_default button
     set_btn = customtkinter.CTkButton(configure_window, text="Set as default", command=set_default, fg_color="green",
                                       hover=True)
-    set_btn.grid(row=8, column=1, padx=10, pady=10)
+    set_btn.grid(row=7, column=1, padx=10, pady=10)
 
     # Ok button
     ok_btn = customtkinter.CTkButton(configure_window, text="ok", command=set_ok, fg_color="green", hover=True)
-    ok_btn.grid(row=9, column=0, padx=10, pady=10)
+    ok_btn.grid(row=8, column=0, padx=10, pady=10)
 
     # Ok button
     ok_btn = customtkinter.CTkButton(configure_window, text="Previous Configuration", command=pre_conf,
                                      fg_color="green", hover=True)
-    ok_btn.grid(row=9, column=1, padx=10, pady=10)
+    ok_btn.grid(row=8, column=1, padx=10, pady=10)
 
 
 btn = customtkinter.CTkButton(window, text="Configure", command=configuration_window)

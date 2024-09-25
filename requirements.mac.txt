@@ -20,4 +20,3 @@ opencv-python
 scikit-image
 opencv-rolling-ball
 customtkinter==4.6.3
-mrc
