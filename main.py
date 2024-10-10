@@ -328,7 +328,6 @@ def segment_images():
                        verbose=opt.verbose)
         print("ENDED PREDICT_images")
 
-        return
         if opt.save_masks == True:
             if opt.verbose:
                 print("\nSaving the masks...")
