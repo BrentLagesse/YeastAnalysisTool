@@ -117,7 +117,7 @@ def predict_images(test_path, sample_submission, outputfilename, rescale = False
                               config=inference_config,
                               model_dir=MODEL_DIR)
     model.load_weights(model_path, by_name=True)
-
+    print("loaded weights")
 
     for i in np.arange(n_images):
         start_time = time.time()
