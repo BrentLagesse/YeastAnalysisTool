@@ -1,5 +1,7 @@
 # YeastAnalysisTool
 
+Note --  This project is in the process of being deprecated.  We are currently testing a web-based version that is easier to install in your lab.  Future updates will be found in that version and I will link to it here when it is publicly available.
+
 You need to make sure git, virtualenv, and python3 are installed and are in the $PATH (you can type those command names on the commandline and your computer finds them).
 
 Note that I have mostly used python 3.9.6 for mac.  It seems that 3.12.2 may be causing problems with the dependencies.
