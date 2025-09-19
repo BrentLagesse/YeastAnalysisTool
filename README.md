@@ -1,6 +1,7 @@
 # YeastAnalysisTool
 
-Note --  This project is in the process of being deprecated.  We are currently testing a web-based version that is easier to install in your lab.  Future updates will be found in that version and I will link to it here when it is publicly available.
+**This version of the tool is no longer maintained.   All future work will be located at https://github.com/BrentLagesse/Yeast-Web
+We have migrated the tool to a web-based tool so that researchers only need to install on a single server and all users can just access the tool via a web browser.**
 
 You need to make sure git, virtualenv, and python3 are installed and are in the $PATH (you can type those command names on the commandline and your computer finds them).
 
